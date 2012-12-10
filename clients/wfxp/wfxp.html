@@ -1,0 +1,352 @@
+<html>
+<head>
+<meta charset="utf-8" />
+<title>WFXP (FXP.One client)</title>
+  <script src="js/handling.js"></script>
+  <script src="js/actions.js"></script>
+  <script src="js/misc.js"></script>
+  <script language="javascript" type="text/javascript">
+ //  var wsUri = "wss://192.168.30.144:8886/";
+   var wsUri = "wss://localhost:8886/";
+   var myuser = "admin";
+   var mypass = "";
+   var output;
+   var qmoutput;
+   var socket;
+   var currview="";
+   var sitelist={};
+   var qlist={};
+   var lsite={siteid:-1,session:-1,filter:null,listing:[]};
+   var rsite={siteid:-1,session:-1,filter:null,listing:[]};
+   var queue={qid:-1,listing:[]};
+   var queuemanager={listing:[]};
+   var connected = false;
+   var debug = false;
+   var eventqueue = [];
+   var usequeue = true; var queuebatch = 50;
+
+   function init() {
+     output = document.getElementById("output");
+     qmoutput = document.getElementById("qmoutput");
+     var host = document.getElementById("host");
+     host.value=localStorage.host ? localStorage.host:wsUri;
+     var user = document.getElementById("user");
+     user.value=localStorage.user ? localStorage.user:myuser;
+     if(usequeue){
+        setInterval(pumpQueue,5);
+     }
+     //pass = document.getElementById("pass");
+     //pass.value=wsUri;
+     //testWebSocket();
+     cleanUI();
+     clearTable("left");clearTable("right");clearTable("queue");
+
+   //  clearTable("left");
+  }
+   function onOpen(evt) {
+     WriteLog("Connected.");
+     doAuth();
+   }
+   function onClose(evt) {
+     WriteLog("Disconnected.");
+     document.getElementById("cblock").style.display = "block";
+     doClose();
+   }
+   function onMessage(evt) {
+     if(usequeue){
+        eventqueue.push(evt.data);
+     }else{
+        Dispatch(evt.data);
+     }
+     //WriteLog(evt.data);
+   }
+   function onError(evt) {
+     WriteLog(evt.data);
+   }
+   function pumpQueue(){
+      if(eventqueue.length>0){
+         var work = (eventqueue.length<queuebatch)?eventqueue.length:queuebatch;
+         for(var i = 0; i<work;i++){
+            Dispatch(eventqueue.shift());
+         }
+      }
+   }
+   window.addEventListener("load", init, false);
+   window.onresize = cleanUI
+  </script>
+<link rel="StyleSheet" href="css/main.css" title="main" type="text/css"/>
+</head>
+<body>
+  <div class="connbutt">
+  <input class="ctrls" type="image" alt="Connect" title="Connect"
+     src="img/disconnected.png" onclick="doDisConn();" value="Connect" id="connect">
+   <span id="connectstatus"><font color="#000">Enter credentials and click lock to connect.</font></span>
+   </div>
+  <div class="connbox" id="cblock">
+  User:<input type="text" name="user" id="user" value="">&nbsp;<input
+     type="password" name="pass" id="pass" value="" onChange="doEnterConn();">
+  <br/>
+  Host:<input type="text" name="host" id="host" value="">
+  <br/>
+  </div>
+  <div class="pwdchbox" id="pwdchbox">
+  Current Password:<input type="password" name="currpass" id="currpass" value="">
+  <br/>
+  New Password:<input type="password" name="newpass" id="newpass" value="">
+  <br/>
+  Confirm New Password:<input type="password" name="confpass" id="confpass" value="">
+  <br/>
+  <input class="ctrls" type="image" alt="Change passwords" title="Change passwords"
+     src="img/save.gif" onclick="doPwdChange();" value="Change" id="pwdchange">
+  </div>
+  <div id="tab">
+  <ul>
+  <li id="pmtab" class=""><a href="#" value="click" onclick="toggleView('primary')">Main</a></li>
+  <li id="smtab" class=""><a href="#" value="click" onclick="toggleView('sitemanager')">Sites</a></li>
+  <li id="qmtab" class=""><a href="#" value="click" onclick="toggleView('queuemanager')">Queues</a></li>
+  </ul>
+  </div>
+<div class="content" id="primary">
+<div class="table_wrapper" id="lpane">
+<input type="image" class="ctrls" src="img/site-connect.png" alt="Connect Site" title="Connect Site" onclick="do_SESSIONNEW('left');">
+<input type="image" class="ctrls" style="vertical-align: text-bottom;" src="img/site-disconnect.png" alt="Disconnect Site" title="Disconnect Site" onclick="do_SESSIONFREE('left');">
+<select valign="middle" id="lslist" name="lslist"></select>
+<input type="image" class="ctrls" src="img/enqueue.png" alt="Enqueue Item" title="Enqueue Item" onclick="doQueue('left');">
+<input type="text" id="lpath"
+     title="CurrentDirectory" value="" onchange="doCWDEdit('left');">
+<select valign="middle" id="leftcmd" name="leftcmd" onChange="doCmdChange('left');">
+    <option value="refresh">refresh</option>
+    <option value="filter">filter</option>
+    <option value="selectall">select all</option>
+    <option value="clearall">clear all</option>
+   <option value="site" selected>site cmd</option>
+    <option value="mkdir">new dir</option>
+    <option value="unlink">delete</option>
+    <option value="rename">rename</option>
+    <option value="compare">compare</option>
+    <option value="copylist">copy list</option>
+</select>
+<input type="text" id="leftcmdinput"
+     title="Command input (Use $< or $> to iterate on selected items from left, or right, file lists). filters are regex form." value="">
+<input type="image" class="ctrls" src="img/execute.png" alt="Execute Command" title="Execute Command" onclick="doCommand('left');">
+    <div class="header" id="lefthead">
+        <div class="head1"><a href="#" onclick="changeSort('left','NAME');">Filename</a></div>
+        <div class="head2"><a href="#" onclick="changeSort('left','SIZE');">Size</a></div>
+        <div class="head3"><a href="#" onclick="changeSort('left','DATE');">Date</a></div>
+    </div>
+    <div class="tbody" id="leftsite">
+        <table class="scroll_table" id="left">
+            <tbody>
+        </tbody></table>
+    </div>
+</div>
+<div class="table_wrapper" id="rpane">
+<input type="image" class="ctrls" src="img/site-connect.png" alt="Connect Site" title="Connect Site" onclick="do_SESSIONNEW('right');">
+<input type="image" class="ctrls" style="vertical-align: text-bottom;" src="img/site-disconnect.png" alt="Disconnect Site" title="Disconnect Site" onclick="do_SESSIONFREE('right');">
+<select valign="middle" id="rslist" name="rslist"></select>
+<input type="image" class="ctrls" src="img/enqueue.png" alt="Enqueue Item" title="Enqueue Item" onclick="doQueue('right');">
+<input type="text" id="rpath"
+     title="CurrentDirectory" value="" onchange="doCWDEdit('right');">
+<select valign="middle" id="rightcmd" name="rightcmd" onChange="doCmdChange('right');">
+    <option value="refresh">refresh</option>
+    <option value="filter">filter</option>
+    <option value="selectall">select all</option>
+    <option value="clearall">clear all</option>
+   <option value="site" selected>site cmd</option>
+    <option value="mkdir">new dir</option>
+    <option value="unlink">delete</option>
+    <option value="rename">rename</option>
+    <option value="compare">compare</option>
+    <option value="copylist">copy list</option>
+</select>
+<input type="text" id="rightcmdinput"
+     title="Command input (Use $< or $> to iterate on selected items). filters are regex form" value="">
+<input type="image" class="ctrls" src="img/execute.png" alt="Execute Command" title="Execute Command" onclick="doCommand('right');">
+    <div class="header" id="righthead">
+        <div class="head1"><a href="#" onclick="changeSort('right','NAME');">Filename</a></div>
+        <div class="head2"><a href="#" onclick="changeSort('right','SIZE');">Size</a></div>
+        <div class="head3"><a href="#" onclick="changeSort('right','DATE');">Date</a></div>
+    </div>
+    <div class="tbody" id="rightsite">
+        <table class="scroll_table" id="right">
+            <tbody>
+        </tbody></table>
+    </div>
+</div>
+<br style="clear:both;"/>
+<div class="qwrapper">
+<div class="table_wrapper" id="qpane">
+<input type="image" class="ctrls" src="img/go1.png" title="Start
+    Processing Queue" onclick="do_GO();">
+<input type="image" class="ctrls" src="img/stop2.png" title="Stop
+   Queue Processing" onclick="do_STOP();">
+<input type="image" class="ctrls" src="img/move-top.png" title="Move to top" onclick="do_QITOP();">
+<input type="image" class="ctrls" src="img/move-up.png" title="Move up one" onclick="do_QIUP();">
+<input type="image" class="ctrls" src="img/move-down.png" title="Move down one" onclick="do_QIDOWN();">
+<input type="image" class="ctrls" src="img/move-bottom.png" title="Move to bottom" onclick="do_QIBOTTOM();">
+<input type="image" class="ctrls" src="img/delete_item.png" title="Delete item" onclick="do_QIDELETE();">
+<input type="image" class="ctrls" src="img/nuke.gif" title="Clear all items" onclick="do_QICLEAR();">
+<input type="image" class="ctrls" src="img/select_all.png" title="Select all" onclick="do_QISELECT();">
+<input type="image" class="ctrls" src="img/select_none.png" title="Deselect all" onclick="do_QIDESELECT();">
+<input type="image" class="ctrls" src="img/insert-stop.png" title="Insert STOP item" onclick="do_QIINSERT();">
+<span id="speedstats" title="Last completed transfer">-.-KB/s</span>
+<div class="qheader" id="queuehead">
+        <div class="qhead1"><a href="#" onclick="changeSort('queue','SRC');">Source</a></div>
+        <div class="qhead2"><a href="#" onclick="changeSort('queue','SIZE');">Size</a></div>
+        <div class="qhead3"><a href="#" onclick="changeSort('queue','DATE');">Date</a></div>
+        <div class="qhead4"><a href="#" onclick="changeSort('queue','DEST');">Destination</a></div>
+    </div>
+    <div class="qtbody" id="queueblock">
+        <table class="qscroll_table" id="queue">
+            <tbody>
+        </tbody></table>
+    </div>
+</div>
+</div>
+<br style="clear:both;"/>
+  <center>
+  <a href="#" value="click" onclick="clearLog('output')">--clear--</a>&nbsp;
+  <a href="#" value="click" onclick="toggleSblock()">--advanced--</a>&nbsp;
+  <a href="#" id="logtog" value="click" onclick="hideLog()">--show--</a><br/>
+  <div style="display: none" id="sblock">
+  Outgoing:<input type="text" id="send" value="">
+  <input type="button" onclick="doSend();" name="send" value="Send">
+  <br/>
+  </div>
+  <textarea class="output" id="output" rows="15" cols="55" style="display: none;"></textarea></center>
+</div>
+<div class="content" id="sitemanager">
+
+<select id="sm_sites" title="Choose site to edit" value="-1"
+  onChange="doSMSiteChange();">
+  <option value="-1">--New--</option>
+</select>
+
+<input type="image" class="ctrls" src="img/delete_item.png" title="Delete Site" onclick="smDeleteSite();">
+<input type="image" class="ctrls" src="img/save.gif" title="Save Site" onclick="smSaveSite();">
+<br/>
+Local: <input type="checkbox" id="sm_local"
+     title="local download or FTP Server" value="TRUE" onchange="smLocalChange();">
+ Site Name: <input type="text" id="sm_name"
+     title="Name of site" value="" onchange="">
+ Hostname: <input type="text" id="sm_host"
+     title="Hostname or IP" value="" onchange="">
+ Port: <input type="text" id="sm_port"
+     title="PORT number" value="" onchange="">
+ User: <input type="text" id="sm_user"
+     title="FTP User account" value="" onchange="">
+ Pass: <input type="password" id="sm_pass"
+     title="FTP account password" value="" onchange="">
+  <br/>
+ Startdir: <input type="text" id="sm_startdir"
+     title="Change to directory (leave empty for root)" value="" onchange="">
+Passive: <select id="sm_pasv" title="Use passive method when listing directories." onChange="">
+    <option value="2">Auto</option>
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+  </select>
+FXP-Pasv: <select id="sm_fxpp" title="Use passive method when transfering files (FXPing)" onChange="">
+    <option value="2">Auto</option>
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+  </select>
+SSL/TLS: <select id="sm_cssl" title="Use encryption on control channel. AUTH TLS command required. (Default: yes)" onChange="">
+    <option value="2">Auto</option>
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+  </select>
+Data SSL: <select id="sm_dssl" title="Use encryption on data transfers. PROT command required. (Default: yes)" onChange="">
+    <option value="2">Auto</option>
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+  </select>
+FXP SSL: <select id="sm_xssl" title="Use encryption on FXP transfers. CCSN/SSCN command required. (Default: yes)" onChange="">
+    <option value="2">Auto</option>
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+  </select>
+<br/>
+  Implicit SSL: <select id="sm_implicit" title="Use implicit SSL encryption when connecting (Default: NO, use AUTH TLS)" onChange="">
+    <option value="2">Auto</option>
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+  </select>
+Resume: <select id="sm_resume" title="Resume partial transfers, or replace from the start (Default: yes)" onChange="">
+    <option value="2">Auto</option>
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+  </select>
+Resume last: <select id="sm_reslast" title="Queue resumes last after all other transfers. Better for racing. (Default: yes)" onChange="">
+    <option value="2">Auto</option>
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+  </select>
+PRET: <select id="sm_pret" title="Send Pre-Transfer command before transfers (Default: yes, if announced in FEAT)" onChange="">
+    <option value="2">Auto</option>
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+  </select>
+XDUPE: <select id="sm_xdupe" title="Look for X-DUPE messages and adjust queue. Better for racing. (Default: yes, if announced in FEAT)" onChange="">
+    <option value="2">Auto</option>
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+  </select>
+Empty Files: <select id="sm_fempty" title="Skip files of 0 byte length (Default: yes)" onChange="">
+    <option value="2">Auto</option>
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+  </select>
+Empty Dirs: <select id="sm_dempty" title="Skip empty directories (Default: yes)" onChange="">
+    <option value="2">Auto</option>
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+  </select>
+<br/>
+ Files Move-first: <input type="text" id="sm_fmove"
+     title="List of slash-separated patterns of files to queue first" value="" onchange="">
+ Files Skip list: <input type="text" id="sm_fskip"
+     title="List of slash-separated patterns of files to skip" value="" onchange="">
+<br/>
+ Dirs Move-first: <input type="text" id="sm_dmove"
+     title="List of slash-separated patterns of directories to queue first" value="" onchange="">
+ Dirs Skip list: <input type="text" id="sm_dskip"
+     title="List of slash-separated patterns of directories to skip" value="" onchange="">
+ <br/>
+  Extra key pairs: <input type="text" id="sm_extra"
+     title="Advanced usage. Specify extra 'key1=value1|key2=value2|...' entries." value="" onchange="">
+</div>
+<div class="content" id="queuemanager">
+<h1>Queue Manager</h1>
+<div class="qmwrapper">
+<div class="table_wrapper" id="qmpane">
+<input type="image" class="ctrls" src="img/refresh.png" title="Refresh Queue List" onclick="do_QMRefresh();">
+<input type="image" class="ctrls" src="img/idle.png" title="Clear idle queues" onclick="do_QMClearIdle();">
+<input type="image" class="ctrls" src="img/clone.png" title="Clone queue (add another thread)" onclick="do_QMClone();">
+<input type="image" class="ctrls" src="img/subscribe.png" title="Un/Subscribe to queue (receive transfer messages)" onclick="do_QMSubscribe();">
+<input type="image" class="ctrls" src="img/view.png" title="View queue errors, if any" onclick="do_QMView();">
+<input type="image" class="ctrls" src="img/grab.png" title="Grab queue (To modify queue)" onclick="do_QMGrab();">
+<input type="image" class="ctrls" src="img/nuke.gif" title="Nuke queue" onclick="do_QMNuke();">
+  <div class="qmheader" id="qmqueuehead">
+        <div class="qmhead1"><a href="#" onclick="changeSort('queue','SRC');">S</a></div>
+        <div class="qmhead2"><a href="#" onclick="changeSort('queue','SIZE');">Src Site</a></div>
+        <div class="qmhead3"><a href="#" onclick="changeSort('queue','DATE');">Dest Site</a></div>
+        <div class="qmhead4"><a href="#" onclick="changeSort('queue','DEST');">Items/Errors</a></div>
+        <div class="qmhead5"><a href="#" onclick="changeSort('queue','DEST');">KB/s</a></div>
+        <div class="qmhead6"><a href="#" onclick="changeSort('queue','DEST');">Status</a></div>
+    </div>
+    <div class="qmtbody" id="qmqueueblock">
+        <table class="qmscroll_table" id="qmqueue">
+            <tbody>
+        </tbody></table>
+    </div>
+</div>
+</div>
+<br style="clear:both;"/>
+  <center>
+  <a href="#" value="click" onclick="clearLog('qmoutput')">--clear--</a><br/>
+  <textarea class="qmoutput" id="qmoutput" rows="15" cols="55"></textarea>
+  </center>
+</div>
+</div>
+</body>
+</html>

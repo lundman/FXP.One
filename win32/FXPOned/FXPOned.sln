@@ -1,0 +1,51 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FXPOned", "FXPOned.vcxproj", "{607966C1-17A3-446A-ADCD-9B53F761FD37}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3844C245-1F8A-4534-BCE0-5084BDBDF043} = {3844C245-1F8A-4534-BCE0-5084BDBDF043}
+		{4E103D8B-9417-4502-BA95-914330BBC3B9} = {4E103D8B-9417-4502-BA95-914330BBC3B9}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lion", "..\..\lion\win32\lion.vcxproj", "{4E103D8B-9417-4502-BA95-914330BBC3B9}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dirlist", "..\..\lion\contrib\libdirlist\win32\dirlist.vcxproj", "{3844C245-1F8A-4534-BCE0-5084BDBDF043}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clomps", "..\..\clients\win32\clomps\clomps\clomps.vcxproj", "{15A04BB0-29DF-4807-8946-7D09A9957A1B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4E103D8B-9417-4502-BA95-914330BBC3B9} = {4E103D8B-9417-4502-BA95-914330BBC3B9}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clomps-irc", "..\..\clients\win32\clomps-irc\clomps-irc\clomps-irc.vcxproj", "{CF45A73D-89B7-45FB-9DA5-D1989FF4C556}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{607966C1-17A3-446A-ADCD-9B53F761FD37}.Debug|Win32.ActiveCfg = Debug|Win32
+		{607966C1-17A3-446A-ADCD-9B53F761FD37}.Debug|Win32.Build.0 = Debug|Win32
+		{607966C1-17A3-446A-ADCD-9B53F761FD37}.Release|Win32.ActiveCfg = Release|Win32
+		{607966C1-17A3-446A-ADCD-9B53F761FD37}.Release|Win32.Build.0 = Release|Win32
+		{4E103D8B-9417-4502-BA95-914330BBC3B9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4E103D8B-9417-4502-BA95-914330BBC3B9}.Debug|Win32.Build.0 = Debug|Win32
+		{4E103D8B-9417-4502-BA95-914330BBC3B9}.Release|Win32.ActiveCfg = Release|Win32
+		{4E103D8B-9417-4502-BA95-914330BBC3B9}.Release|Win32.Build.0 = Release|Win32
+		{3844C245-1F8A-4534-BCE0-5084BDBDF043}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3844C245-1F8A-4534-BCE0-5084BDBDF043}.Debug|Win32.Build.0 = Debug|Win32
+		{3844C245-1F8A-4534-BCE0-5084BDBDF043}.Release|Win32.ActiveCfg = Release|Win32
+		{3844C245-1F8A-4534-BCE0-5084BDBDF043}.Release|Win32.Build.0 = Release|Win32
+		{15A04BB0-29DF-4807-8946-7D09A9957A1B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{15A04BB0-29DF-4807-8946-7D09A9957A1B}.Debug|Win32.Build.0 = Debug|Win32
+		{15A04BB0-29DF-4807-8946-7D09A9957A1B}.Release|Win32.ActiveCfg = Release|Win32
+		{15A04BB0-29DF-4807-8946-7D09A9957A1B}.Release|Win32.Build.0 = Release|Win32
+		{CF45A73D-89B7-45FB-9DA5-D1989FF4C556}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CF45A73D-89B7-45FB-9DA5-D1989FF4C556}.Debug|Win32.Build.0 = Debug|Win32
+		{CF45A73D-89B7-45FB-9DA5-D1989FF4C556}.Release|Win32.ActiveCfg = Release|Win32
+		{CF45A73D-89B7-45FB-9DA5-D1989FF4C556}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

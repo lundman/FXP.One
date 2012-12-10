@@ -1,0 +1,215 @@
+body {
+	background: #FFF;
+	color: #000;
+	margin-left: 2px;
+	margin-top: 10px;
+	padding: 0
+}
+.connbox{
+        float: left;
+        align: left;
+        vertical-align: center;
+        border-style: dotted;
+        border-width: 1px;
+        border-color: #0000;
+        display:inline-block;
+        margin: 3px;
+}
+.connbutt{
+}
+.ctrls { 
+        vertical-align: text-bottom;
+ #       border: 3px groove #545565;
+}
+textarea {
+	font: normal normal 10px sans-serif;
+        resize: none;
+}
+table.qpane {
+        border-style: none;
+}
+
+table.panes {
+        border-style: dotted;
+        border-width: 1px;
+        border-color: #0000;
+}
+table.panes td {
+        border-style: solid;
+        border-width: 1px;
+        border-color: #0000;
+}
+table, td, a {
+	color: #000;
+	font: normal normal 10px sans-serif
+}
+
+div.fselwrap {
+	clear: both;
+	border: 1px solid #000;
+	height: 285px;
+	overflow: auto;
+	width: 516px
+}
+
+html>body div.fselwrap {
+	overflow: hidden;
+	width: 516px
+}
+
+html>body div.fselwrap table {
+	width: 516px
+}
+
+html>body thead.fhead tr {
+	display: block
+}
+thead.fhead th {
+	background: #666;
+	border-left: 1px solid #888;
+	border-right: 1px solid #444;
+	border-top: 1px solid #888;
+	font-weight: normal;
+	padding: 4px 3px;
+	text-align: left;
+}
+thead.fhead a, thead.fhead a:link, thead.fhead a:visited {
+	color: #FFF;
+	display: block;
+	text-decoration: none;
+	width: 100%
+}
+thead.fhead a:hover {
+	color: #FFF;
+	display: block;
+	text-decoration: underline;
+	width: 100%
+}
+html>body tbody.flist {
+	display: block;
+	height: 262px;
+	overflow: auto;
+	width: 100%
+}
+
+tbody.flist td, tbody.flist tr.file td {
+	background: #FFF;
+	border-bottom: none;
+	border-left: none;
+	border-right: 1px solid #CCC;
+	border-top: 1px solid #DDD;
+	padding: 2px 3px 3px 4px
+}
+
+tbody.flist tr.dir td {
+	background: #EEE;
+	border-bottom: none;
+	border-left: none;
+	border-right: 1px solid #CCC;
+	border-top: 1px solid #DDD;
+	padding: 2px 3px 3px 4px
+}
+
+html>body thead.fhead th {
+	width: 287px
+}
+
+html>body thead.fhead th + th {
+	width: 100px
+}
+
+html>body thead.fhead th + th + th {
+	width: 116px
+}
+
+html>body tbody.flist td {
+	width: 280px
+}
+
+html>body tbody.flist td + td {
+	width: 100px
+}
+html>body tbody.flist td + td + td {
+	width: 100px
+}
+
+html>body thead.fhead2 tr {
+	display: block
+}
+thead.fhead2 th {
+	background: #666;
+	border-left: 1px solid #888;
+	border-right: 1px solid #444;
+	border-top: 1px solid #888;
+	font-weight: normal;
+	padding: 4px 3px;
+	text-align: left;
+}
+thead.fhead2 a, thead.fhead2 a:link, thead.fhead2 a:visited {
+	color: #FFF;
+	display: block;
+	text-decoration: none;
+	width: 100%
+}
+thead.fhead2 a:hover {
+	color: #FFF;
+	display: block;
+	text-decoration: underline;
+	width: 100%
+}
+html>body tbody.flist2 {
+	display: block;
+	height: 262px;
+	overflow: auto;
+	width: 100%
+}
+
+tbody.flist2 td, tbody.flist2 tr.file td {
+	background: #FFF;
+	border-bottom: none;
+	border-left: none;
+	border-right: 1px solid #CCC;
+	border-top: 1px solid #DDD;
+	padding: 2px 3px 3px 4px
+}
+
+tbody.flist2 tr.dir td {
+	background: #EEE;
+	border-bottom: none;
+	border-left: none;
+	border-right: 1px solid #CCC;
+	border-top: 1px solid #DDD;
+	padding: 2px 3px 3px 4px
+}
+
+html>body thead.fhead2 th {
+	width: 187px
+}
+
+html>body thead.fhead2 th + th {
+	width: 50px
+}
+
+html>body thead.fhead2 th + th + th {
+	width: 50px
+}
+html>body thead.fhead2 th + th + th + th {
+	width: 287px
+}
+
+html>body tbody.flist2 td {
+	width: 180px
+}
+
+html>body tbody.flist2 td + td {
+	width: 50px
+}
+html>body tbody.flist2 td + td + td {
+	width: 50px
+}
+html>body tbody.flist2 td + td + td + td {
+	width: 180px
+}
+
+
+-->

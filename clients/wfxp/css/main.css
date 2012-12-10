@@ -1,0 +1,161 @@
+body {
+	background: #FFF;
+	color: #000;
+	margin-left: 2px;
+	margin-top: 10px;
+}
+.connbox{
+        float: left;
+        align: left;
+        vertical-align: center;
+        border-style: dotted;
+        border-width: 1px;
+        border-color: #000;
+        display:inline-block;
+        margin: 3px;
+}
+.pwdchbox{
+        float: left;
+        align: left;
+        vertical-align: center;
+        border-style: dotted;
+        border-width: 1px;
+        border-color: #000;
+        display:none;
+        margin: 3px;
+        clear:both;
+}
+#primary{display:none;}
+#sitemanager{display:none;}
+#queuemanager{display:none;}
+
+.connbutt{
+       color: #F00;
+}
+.ctrls {
+        vertical-align: text-bottom;
+}
+#speedstats {
+    float: right;
+}
+.chkbox {
+        vertical-align: middle;
+}
+.dir {background-color: #CCC;}
+.file {background-color: #FFF;}
+.processing {background-color: #0F0;}
+.subbed {background-color: #CCC; font-weight: bold;}
+
+        .output {font: normal normal 10px monospace;resize: none;width:417;}
+        .qmoutput {font: normal normal 10px sans-serif;resize: none;width:417;}
+	.table_wrapper {font: normal normal 10px sans-serif;border:1px solid #000;float:left;}
+	.table_wrapper select {font: normal normal 10px sans-serif;}
+	.table_wrapper input {font: normal normal 10px sans-serif;}
+        .header{color: #FFF;  font: normal normal 10px sans-serif;width:417px; border-bottom:1px solid #000;}
+	.header div {padding:1px 5px; overflow:hidden;}
+	.header div > a:link {color: #FFF; text-decoration: none;}
+	.header div > a:visited {color: #FFF; text-decoration: none;}
+        .head1{ background-color: #666; float:left; width:80px; border-right:1px solid #000;}
+	.head2{ background-color: #666; float:left; width:40px; border-right:1px solid #000;}
+	.head3{ background-color: #666; }
+        .tbody{height:285px; width:417px;}
+	.tbody{overflow-y:auto;overflow-x:hidden;}
+        .scroll_table {font: normal normal 10px sans-serif;border-collapse:collapse; width:417px; padding:0;}
+        .scroll_table td{border-bottom:1px solid #000; padding:1px 5px;}
+        .nw {white-space:nowrap;overflow-x:hidden;width:inherit;}
+        .nwcenter {white-space:nowrap;overflow-x:hidden;width:inherit;text-align:center}
+        .td1{border-right:1px solid #000;width:80px;}
+	.td2{border-right:1px solid #000;width:40px;}
+        .td3{border:0px;}
+	#lpane {margin-right:2;}
+	#rpane {margin-left:2;}
+        .qtbody{height:285px; width:417px;}
+	.qtbody{overflow-y:auto;overflow-x:hidden;}
+        .qscroll_table {font: normal normal 10px sans-serif;border-collapse:collapse; width:417px; padding:0;}
+        .qscroll_table td{border-bottom:1px solid #000; padding:1px 5px;}
+        .qwrapper {width:417px;margin-left:auto;margin-right:auto;}
+        #qpane { margin-top:4; }
+        .qheader{color: #FFF;  font: normal normal 10px sans-serif;width:417px; border-bottom:1px solid #000;}
+	.qheader div {padding:1px 5px; overflow:hidden;}
+	.qheader div > a:link {color: #FFF; text-decoration: none;}
+	.qheader div > a:visited {color: #FFF; text-decoration: none;}
+        .qhead1{ background-color: #666; float:left; width:80px; border-right:1px solid #000;}
+	.qhead2{ background-color: #666; float:left; width:40px; border-right:1px solid #000;}
+	.qhead3{ background-color: #666; float:left; width:80px; border-right:1px solid #000;}
+	.qhead4{ background-color: #666; }
+        .qtd1{border-right:1px solid #000;width:80px;}
+	.qtd2{border-right:1px solid #000;width:40px;}
+        .qtd3{border-right:1px solid #000;width:80px;}
+        .qtd4{border:0px;}
+
+        .qmtbody{height:285px; width:417px;}
+	.qmtbody{overflow-y:auto;overflow-x:hidden;}
+        .qmscroll_table {font: normal normal 10px sans-serif;border-collapse:collapse; width:417px; padding:0;}
+        .qmscroll_table td{border-bottom:1px solid #000; padding:1px 5px;}
+        .qmwrapper {width:417px;margin-left:auto;margin-right:auto;}
+        #qmpane { margin-top:4; }
+        .qmheader{color: #FFF;  font: normal normal 10px sans-serif;width:417px; border-bottom:1px solid #000;}
+	.qmheader div {padding:1px 5px; overflow:hidden;}
+	.qmheader div > a:link {color: #FFF; text-decoration: none;}
+	.qmheader div > a:visited {color: #FFF; text-decoration: none;}
+        .qmhead1{ background-color: #666; float:left; width:80px; border-right:1px solid #000;}
+	.qmhead2{ background-color: #666; float:left; width:40px; border-right:1px solid #000;}
+	.qmhead3{ background-color: #666; float:left; width:80px; border-right:1px solid #000;}
+	.qmhead4{ background-color: #666; float:left; width:80px; border-right:1px solid #000;}
+	.qmhead5{ background-color: #666; float:left; width:80px; border-right:1px solid #000;}
+	.qmhead6{ background-color: #666; }
+        .qmtd1{border-right:1px solid #000;width:80px;}
+	.qmtd2{border-right:1px solid #000;width:40px;}
+        .qmtd3{border-right:1px solid #000;width:80px;}
+        .qmtd4{border-right:1px solid #000;width:80px;}
+        .qmtd5{border-right:1px solid #000;width:80px;}
+        .qmtd6{border:0px;}
+
+
+    #tab { margin-top: 4px;}
+	#tab ul {
+        clear:both;
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	#tab li {
+		display: inline;
+		margin: 0 2px 0 0;
+	}
+
+	#tab a {
+		padding: 0 1em;
+		text-decoration: none;
+		color: #a80;
+		background: #fe5;
+	}
+
+	#tab a:hover {
+		background: #fc0;
+		color: #540;
+	}0123456789a
+
+	#tab .selected {
+	}
+
+	#tab .selected a {
+		padding-bottom: 2px;
+		font-weight: bold;
+		color: black;
+		background: #fc0;
+	}
+
+	.content {
+		margin-top: 4px;
+		background: #FFF;
+	}
+
+	.content p {
+		margin: 0;
+		padding: 1em;
+		background: white;
+	}
+
+-->

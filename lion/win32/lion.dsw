@@ -1,0 +1,119 @@
+Microsoft Developer Studio Workspace File, Format Version 6.00
+# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
+
+###############################################################################
+
+Project: "dirlist"=..\contrib\libdirlist\win32\dirlist.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "fork"=..\SAMPLES\fork\fork\fork.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name lion
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "getdirs"=..\samples\getdirs\win32\getdirs.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name lion
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "lion"=.\lion.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name dirlist
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "relay"=..\SAMPLES\RELAY\relay\relay.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name lion
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "sendfile"="..\SAMPLES\SEND-FILE\sendfile\sendfile.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name lion
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "system"=..\SAMPLES\system\system\system.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name lion
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Global:
+
+Package=<5>
+{{{
+}}}
+
+Package=<3>
+{{{
+}}}
+
+###############################################################################
+
