@@ -23,7 +23,7 @@ AC_C_INLINE
 AC_SYS_LARGEFILE
 
 AC_HEADER_TIME
-AC_CHECK_HEADERS([stdarg.h varargs.h time.h sys/time.h sys/types.h])
+AC_CHECK_HEADERS([stdarg.h varargs.h time.h sys/time.h sys/types.h limits.h])
 
 AC_CHECK_FUNC(snprintf,AC_DEFINE_UNQUOTED(HAVE_SNPRINTF,1,[Presence of snprintf found]),[
  AC_MSG_WARN(Adding internal snprintf function)])
