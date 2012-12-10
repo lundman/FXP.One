@@ -57,7 +57,7 @@ void options(char *prog)
         printf("  -h          : display usage help (this output)\n");
         printf("  -f <file>   : specify conf filename. Default clomps.conf\n");
         printf("  -a <sec>    : subtract <sec> from stored last_check time\n");
-		printf("  -i <pattern>: search for pattern. '*' would should all as new\n");
+		printf("  -i <pattern>: search for pattern. '*' would show all as new\n");
 		printf("  -q          : process AUTOQ commands after comparison\n");
 		printf("  -n          : do not save updated timestamps to conf file\n");
 		printf("  -v          : verbose output\n");
