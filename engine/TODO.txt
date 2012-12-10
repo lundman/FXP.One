@@ -1,0 +1,78 @@
+
+
+From a client's POV, when a session is lost, should we really
+issue "DISCONNECT" for one kind, and "SESSIONFREE" for another? Both
+means you have to ask for a new one?
+
+
+
+Race condition. When you issue SESSIONNEW, there is an uncertain time
+passing as FXP.One is connecting and authentication with the remote
+server. Eventually the successful CONNECT message will come back.
+
+... However, you can issue any other SID related command in between
+those messages, and since the SID is "known" to the system, but
+technically not handled over to the client (refering by guess work?)
+the client can issue, and insert commands in the middle of the
+authentication phase.
+
+We need to stop additional commands from "seeing" the SID, until the
+SID is actually ready.
+
+
+
+
+dirlist needs error handling beyond just dropping the session.
+
+
+
+When queue is idle, it should be possible to "grab" it, and its
+sessions (if connected) for further work, and QADD.
+
+
+
+if RETR fails, the state engine gets lost (waiting for idle forever).
+
+
+You can still do many naughty things. Like during queue-processing you
+can call commands like CWD, PROT, CCSN, SSCN, PASV, PORT, etc etc. We
+need extra checks to stop user commands when they don't own it.
+
+
+BUG: If a session is released during TLS/SSL negotiations, we might
+free the session node, before we receive a TLS FAILED event, which
+will access the released session structure.
+
+TODO: dir_skipempty = NO. We don't create empty dirs at all at the
+moment.
+
+TODO: Handle crappy symlinks in drftpd etc.
+
+BUG: You can issue DIRLIST while you are already in DIRLIST. This will
+core.
+
+BUG: QMOVE and QDEL does operations without sending QC. This will
+leave other clients inconsistent.
+
+
+
+
+QDEL and QADD (when using FID) should be able to take a list of items.
+
+
+BUG: Sorting by date, files 6 months old, day before it changes to
+year display format, are sorted as this year.. (Aug 31st, displayed on
+Mar 1st).
+
+TODO: EPSV support, EPRT?
+
+BUG: [data] SSL negotiation FAILED
+     Segmentation fault (core dumped)
+#0  0x08053126 in data_handler (handle=0x80b7000, user_data=0x80b5480, 
+    status=14, size=0, line=0x0) at data.c:101
+101			if (session->site->data_TLS == YNA_YES)
+(gdb) p session->site
+$2 = (sites_t *) 0xffffffff
+
+
+BUG: IDLE sent before DIRLIST lines.

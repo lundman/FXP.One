@@ -1,0 +1,25 @@
+
+Missing features and support I would like:
+
+WISH: Show queued items when re-entering a dir with queued items.
+
+TODO: quick keys, navigation etc.
+
+TODO: qmgr needs Copy, Edit and Delete added.
+
+TODO: qmgr needs to display sites involved, and misc status.
+
+BUG: engine.c encodes the callback in user_data, but we have
+interleaving calls, to qlist and qgrab for example. This will lead to
+cores. 
+
+TODO: qlist has zero mouse support.
+
+TODO: qmgr has little mouse support.
+
+TODO: There needs to be a way to go from qlist to qmgr. Since going to 
+      display (when idle) will potentially release the queue.
+
+TODO: When queueing, it sets both Queued and Selected. It should OR.
+
+TODO: There is no "STOP" queue processing feature.

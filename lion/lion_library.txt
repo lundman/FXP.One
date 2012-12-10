@@ -1,0 +1,1451 @@
+// $Id: lion_library.txt,v 1.21 2005/12/28 03:16:01 lundman Exp $
+
+Lund's Input Output Library (lion) by Jorgen Lundman <lundman@lundman.net>
+(Document Version v1.14)
+
+lion library was written by Jorgen Lundman <lundman@lundman.net>
+chiefly as a development tool for himself, to aid in making quick
+programs that are networked, non-blocking and portable. 
+
+I've tried to make sure it is as complete as possible, so that all
+types are fully buffered, in and out. All features I could think of
+that belong in the library are there and complete. It was
+particularly hard to implement nonblocking files under all version of
+Windows, as well as the lion_fork() function.
+
+Some of the features are:
+
+ * non blocking, no threading needed for your application [1]
+ * cross-platform, Unix, OsX and Windows.
+ * Text based protocols are parsed for you
+ * Built in SSL
+ * Pipes and spawning processes complete and easy to use
+ * KB/s rate limit on any type (socket, file and pipes)
+ * Buffering is complete for all types, application need not to worry.
+ * Event pass back mode, or direct errors- calling methods optional.
+
+***** Acknowledgements:
+
+Special thanks for Design suggestions, Implementational ideas and
+Debug sessions go to:
+
+Brendan Knox <friar@drunkmonk.net>
+
+The lovely and cute icon for LION library was done by:
+
+Adam Fothergill <speedghost@btinternet.com>
+
+... do check out Airburst and his other work on www.strangeflavour.com
+
+(The icon is NOT part of the CVS distribution at the present time, you
+may see the icon on the homepage for LION.)
+
+***** Additions thanks to:
+
+The #Amiga! chaps without whom we would not have enough pessimism in
+the world!
+
+NOTE regarding the documentation. I've tried my best to keep this up
+to date, there is nothing more frustrating that having documentation
+not match the sources. However, the most frequent mistake I have made
+is in the change of the type of a "handle". You may find it referred
+to as "void *", "connection_t *" or "lion_t *". It should be "lion_t
+*" but I may have missed a few.
+
+****************************************************************************
+
+What is it, just how does the lion library work, and how do I use it?
+  ____
+ / / /\
+/ / / / What is it?
+\____/
+
+It's Lund's Input Output library, run best in non-blocking mode, to simply
+development of your Networked Application. So far it compiles on any
+Operating System I've had a chance to try it on. (NetBSD, FreeBSD,
+OpenBSD, BSDI, Linux, IRIX, Windows, MacOsX, Solaris). It includes
+nice and simple API to do any Networking, File IO and Pipe (fork,
+system() and piping helper programs)
+  ____
+ / / / 
+/   /  How to Link against it?
+\/_/
+
+Compile the library, using the method most appropriate to your
+system. You should then have a liblion.a and lion.h file. You want to
+use the lion.h include in your code, and link against the library. 
+  ____
+ / / / 
+/   /  How do I use it in my code?
+\/_/
+
+You need to initialise it, and release it once your program is
+exiting, this is accomplished by calling:
+
+	int  lion_init(void);
+	void lion_free(void);
+
+Return codes:
+	0 means success.
+
+
+lion_free will iterate all connections and close them nicely for you,
+releasing all memory. Incase your program have finished all IO, but is
+not read to exit, all work is done.
+
+The main outline of the code assume you call the lion_poll function
+frequently, the more the better. It does all the connection state
+logic, input parsing to strings and buffering with flow control. This
+function can either be used to block, that is, used as the main call
+to yield CPU until there is traffic on any socket. This is a common
+method for servers, where nothing is done until there is network
+traffic.
+
+You can also call lion_poll in a polling sense, without blocking, which
+returns immediately. This can be used in client situations, where the
+CPU yield is elsewhere, often tied to the screen refresh.
+
+	int lion_poll( int utimeout, int stimeout );
+
+utimeout and stimeout represent the micro-seconds and seconds that
+poll should block with. If both of these are 0, it is a poll method.
+
+Return codes:
+	-1 means error (don't call lion_poll again - quit)
+	0  timeout occurred 
+	1  traffic/state change (normal return code).
+  ____
+ / / / 
+/   /  How do I distinguish connections from each other?
+\/_/
+
+You have two methods. each function takes that of a network handle,
+which from your point of view is just a "void *" - although it will
+give you type checking warnings if you use "lion_t *". A unique one is
+returned for each new connection, communication input, and passed
+along to all the output functions.
+
+You can optionally specify a "user_data" void * pointer, to your own
+structure or data. This is to help you gain faster access to your own
+internal data. (Rather than having to search through it matching
+against the network handle). However, if you do not care for this
+feature, simply pass NULL.
+  ____
+ / / / 
+/   /  How do I know what is going on, and where do I receive input?
+\/_/
+
+All state changes and input is relayed to the caller, by the use of
+one function lion_userdata, which should be defined by the user of the
+library (presumably you!). It is called for all state changes, and
+input on any socket. Note, you can have ALL your lion events passed to
+this ONE function. Or, you can set a different handler function per
+lion type with the "lion_set_handler()" API method. This can aid in
+making readable and clean code. See the advanced note at the end of
+this section.
+
+
+Remember this function should be defined in _your_ code.
+
+	int lion_userinput( lion_t *handle, void *user_data, 
+			int status, int size, char *line);
+
+The first two arguments are explained in the previous
+paragraph. "Status" passed here is one of "enum lion_status" which is
+defined as:
+
+	LION_INPUT	- New input received on socket, one line.
+	LION_BINARY	- New input received on socket, binary chunk.
+
+	LION_BUFFER_EMPTY	- Output buffer is now empty
+	LION_BUFFER_USED	- Required buffering on output 
+
+	LION_CONNECTION_LOST	    - Connection was lost/broken
+	LION_CONNECTION_CLOSED	    - Connection was closed, by you or peer.
+	LION_CONNECTION_CONNECTED   - A pending connection was established.
+	LION_CONNECTION_NEW	    - A new (incoming) connection on a
+					listen socket.
+
+	LION_CONNECTION_SECURE_ENABLED	- Request for SSL was successful.
+	LION_CONNECTION_SECURE_FAILED	- failed to upgrade to SSL on socket.
+
+	LION_FILE_OPEN		- File opened successfully.
+	LION_FILE_CLOSED	- File reached EOF and has been closed.
+	LION_FILE_FAILED	- Failed to open.
+
+	LION_PIPE_FAILED	- fork, or child failed to start.
+	LION_PIPE_RUNNING	- child successfully started to run.
+	LION_PIPE_EXIT		- child has finished executing.
+
+"line" and "size" passed here are encoded as follows:
+
+LION_INPUT:
+LION_BINARY:
+	"size" has the number of bytes in input buffer "line". In
+	binary mode this represents a chunk of data. You are
+	guaranteed size being larger than 0.
+	In text mode "line" points to a single line of input, guaranteed
+	null-terminated, and without CR/NL and at least 1 byte in size. 
+
+
+LION_CONNECTION_CLOSED:
+LION_FILE_CLOSED:
+LION_PIPE_EXIT:
+	"Size" is 0 for sockets and files. (successful/normal close)
+	In the case of pipes, "Size" will have the return code of the
+	child if it is known, or -1 if it is not. If the return code
+	is required, the application can request to receive a second
+	LION_PIPE_EXIT event for when it is known. If the child never exits,
+	this second events will never come, but the application can
+	chose to kill() the child, since the pipe is known to be closed.
+
+LION_CONNECTION_LOST:
+LION_FILE_FAILED:
+LION_PIPE_FAILED:
+	"Size" has the error code, if know, of the failure, from errno.
+	"Line" has the error message, typically from sys_errlist.
+
+LION_BUFFER_EMPTY:
+LION_BUFFER_USED:
+	Buffering events. Discussed further in the flow control
+	section, but generally when you receive a buffer used event
+	you should pause your reader by calling
+	lion_disable_read. Then enable read again by calling
+	lion_enable_read once you receive buffer empty event.
+
+LION_CONNECTION_SECURE_ENABLED:
+LION_CONNECTION_SECURE_FAILED:
+	If you have requested a secure SSL/TLS connection these events
+	inform you whether or not the upgrade to secure connection
+	succeeded or failed. It is up to the application as to what
+	action should be taken. If in-secure connections is not
+	allowed, calling lion_close upon receiving the secure failed
+	event is sufficient. Or if no action is taken, communication
+	continues as usual, but insecurely.
+
+  /\__________________ 
+ /     /    ___  /  _/
+/   / / /  /\   /  _/  !NOTE!
+\__/_/\___/  \_/___/
+
+Please be aware the any reference _what so ever_ to the handles after
+either status LION_CONNECTION_LOST, LION_CONNECTION_CLOSED,
+LION_FILE_CLOSED, LION_PIPE_EXIT [*], LION_FILE_FAILED or LION_PIPE_FAILED
+is a _serious error_ and will most likely cause core dumps. It is best
+to NULL any local reference to the handle should you store those.
+
+[*] The exception here is that if the return code is not known, you
+can ask for an additional event (one only) to be signalled when it is
+known, if the child eventually does exit. Use lion_want_returncode()
+to request the actual return code. Note there is an issue with
+returning -1 and sensing the -1 that means we do not have the
+returncode yet. But the second event, when asked for, will have the
+final true returncode.
+
+  /\__________________ 
+ /     /    ___  /  _/
+/   / / /  /\   /  _/  *Advance note*
+\__/_/\___/  \_/___/ 
+
+
+If you find it is getting messy having all events coming through the
+one function, you can actually set a different event handler for any
+lion_t *handler in your sources. See:
+
+	lion_t *lion_set_handler( lion_t *, lion_handler_t * );
+
+which returned the previous handler. There is also a
+	lion_handler_t *lion_get_handler( lion_t *);
+
+If you chose to use lion_set_handler (and you probably will) you
+should pass LION_FLAG_FULFILL with the methods so that it will not
+deliver events before you have had a chance to set the handler to be
+used. The FULFILL flag will essentially delay the EVENTS from being
+posted until next lion_poll() call is issued.
+
+
+
+  /\____
+ /     /
+/   / /   Nice! How do I reply/send data?
+\__/_/
+
+There are three functions available to transmit data on a handle. You
+can either use the low-level buffer send, which works just like the
+libc write() call. Or you can use the supplied socket printf function
+which lets you print formatted strings.
+
+	int lion_printf(lion_t *handle, char const *fmt, ...);
+	int lion_send(lion_t *handle, char *buffer, unsigned int len);
+	int lion_output(lion_t *handle, char *buffer, unsigned int len);
+
+All return number of actual bytes sent.
+
+It is preferred that you use lion_send() as it has the full logic with
+compression. If compression is not desired using lion_output() is
+sufficient. SSL is dealt with inside lion_output().
+
+// ***************************************************************
+// ********** Networking Functions
+// ***************************************************************
+
+  /\____
+ /     /
+/   / /   Neat, so uh, how do I actually make a new connection?
+\__/_/
+
+Using the lion_connect call you generate a new network handle, placing
+its socket in the pending state, allowing you to receive
+LION_CONNECTION_CONNECTED status and, of course, actual data input.
+
+	lion_t *lion_connect( char *host, int port, 
+		unsigned long iface, int iport,
+		int lion_flags, void *user_data );
+
+host is a string, either "host.domain.com" or in Internet dot-notation
+"192.168.0.1". Port is a number between 1 and 65535 inclusive.
+
+Return codes:
+	void * - handle to new socket.
+	NULL   - Connection failed.
+
+THIS FUNCTION NEEDS UPDATING. IT IS THE ONLY FUNCTION THAT TAKES A
+"CHAR *" FOR HOSTNAME. IT SHOULD BE CHANGED, AND lion_addr() SHOULD BE USED.
+
+In case of failure, lion_userdata is called with the actual failure
+code as described previously.
+
+iface and iport are optional, if you wish to bind to a specific interface for
+outgoing packets. Generally you specify NULL to let the system do
+automatic routing. Similarly, iport will bind to a specific source
+port. For example, if you are serving FTP data, you may wish to appear
+to connect FROM port 20.
+
+lion_flags are extra features settable. See the discussion regarding
+the FLAGS elsewhere in the is document.
+
+Please be aware that hostname lookups are _not_ nonblocking, so if
+this is not desirable, pass it dot-notation syntax only. This is
+considered as a potential future extention to lion library. If you
+really want nonblocking name lookup, you can consider using the pipe
+syntax to retrieve the IP.
+
+  /\/\
+ / / /\
+/ / / /  What about a listening, incoming socket?
+\____/
+
+They aren't much harder would you believe, but they are a two-stage
+process. That mean you first call lion_listen to configure your
+listening socket. This then makes status LION_CONNECTION_NEW to be
+signaled whenever there is a new connection. Your sources then should
+call lion_accept which will return _a new_ network handle. The network
+handle for the listen handle is still active (for any more
+connections, but you can close this if new connections are not wanted)
+and the new network handle representing the new connection.
+
+	lion_t *lion_listen( int *port, unsigned long iface, 
+			int lion_flags, void *user_data );
+	lion_t *lion_accept( lion_t *node, int close_old,
+			int lion_flags, void *user_data,
+			unsigned long *remhost, int *remport );
+
+'port' here is the actual listen port you which to open, if you don't
+care, and just want the system to open any available port, pass it
+0. It will be filled in with the actual port opened. 
+
+'interface' is an optional IP representing the Network Interface to
+use. This is generally required on Multi-homed hosts, but in most
+cases just pass 0.
+
+lion_accept takes the network handle of the listen socket.
+
+Return codes:
+	   void * - handle to new socket
+	   NULL   - failure.
+
+In case of failure, lion_userdata is called with the actual failure
+code as described previously.
+
+"remhost" and "remport" are optional if you wish the remote hosts IP
+and port filled in. Alternatively you can pass NULL for both here, and
+use lion_getpeername() as well.
+
+Additionally, the Network Layer can do some compression for you, but
+since it is essentially still is an ascii-line protocol, the
+compressed data needs to be base64 encoded. So you don't get maximum
+compression out of it.  You enable outgoing compression by calling:
+
+	void lion_compress_level( int level );
+
+Where 'level' is the number of bytes from which we start considering
+compression. '0' disabled it. Say you set it to '256', only then if a
+packet is larger than that do we attempt to compress. The packet may
+still not be rejected should its compressed size, plus that over
+base64 overhead, exceed that of the original size. Example compression
+levels look like:
+
+Output is 1035 bytes.
+Compressed size: 236 bytes.
+Base64 size: 322
+
+Which can still be considered a significant improvement.
+
+lion uses simple ZIP deflate compression, so don't expect anything fabulous.
+
+Miscellaneous functions to aid in your application:
+
+	void lion_close( lion_t *handle );
+
+Close a handle, making sure to flush any outstanding data. Once data
+is flushed, the lion library automatically calls lion_disconnect() and
+issues the user with the appropriate event. You do not need to call
+either functions if you receive one of the closed, lost or failed
+events.
+
+	void lion_disconnect( lion_t *handle );
+
+If you just want the handle closed without regard for any out-standing
+data yet to be written you can call this instead of lion_close().
+
+	enum lion_type lion_gettype( void *handle );
+
+Returns the type of this handle. Currently the types are
+
+	LION_TYPE_NONE	- Should never happen, and probably signifies an
+				internal error
+	LION_TYPE_SOCKET- Handle is a network socket.
+	LION_TYPE_FILE	- Handle is a regular file on disk.
+	LION_TYPE_PIPE	- Handle is a pipe from lion_fork() or lion_system(). 
+
+	lion_t *lion_adopt(int fd, enum lion_type type, void *user_data);
+
+Take a file descriptor already opened (by application or otherwise)
+and make it part of the lion library engine. Generally not required as
+it is by far better to use lion API to open new entities, but useful
+for situations where you want to perhaps process input from stdin. So
+calling lion_adopt with "fileno(stdin)" can be useful. Windows users
+should be aware that the code to deal with Window's STDIN handles is
+currently lacking.
+
+	void lion_set_userdata( lion_t *handle, void *user_data );
+	void *lion_set_userdata( lion_t *handle );
+
+Allows you to set a handles user_data at a later stage, if it is not
+know by the time you call lion_connect/lion_accpet/lion_open etc.
+
+	int lion_isconnected(lion_t *handle);
+
+Returns non-zero/TRUE is the handle is currently in connection
+state. It does not make any sense to use this on non LION_TYPE_SOCKET.
+
+	unsigned long lion_getsockname(void *handle);
+
+Return the sockname of a connection. Usually required if you are to
+send the IP of a socket, like that in FTP protocol. It can also be
+used with the "interface" on a listening socket.
+
+	int lion_fileno(void *handle);
+
+In some situations you may need to get at the actualy file-descriptor
+used with a socket. This really is strongly discouraged but I have
+left it in here. It is however expected to be used with file IO. For
+example if you want to call lseek(), lstat() and other file IO
+function. However, be aware of what function you use this
+with. Calling close() using lion_fileno() will confuse lion nicely,
+and most likely result in unexpected things.
+
+	void lion_find( int (*)compare(lion_t *handle, void *arg1, void *arg2),
+			void *arg1, void *arg2);
+
+Iterate all nodes available. Calling a user-defined "compare" function
+for each one. The compare function should return non-zero to keep
+iterating (and lion_find() will return NULL). Or return zero to stop
+iterating (and lion_find() returns the current node). Can be used both
+for listing all nodes, or to look for a particular node.
+
+You can use functions like lion_get_type(), lion_get_handler() and
+lion_get_userdata() to uniquely identify a node you are interested in.
+
+
+int extra_iterate(lion_t *vnode, void *arg1, void *arg2)
+{
+	printf("Called with node %p\n", vnode);
+	return 1; // 0 stops iteration (node found), 1 or anything else
+		  // keeps going
+}
+
+main()
+{
+	lion_find(extra_iterate, NULL, NULL);
+
+}
+
+  /\____
+ /     /
+/   / /   Neat, so, what about some example source?
+\__/_/
+
+There should be a few examples in the sample/ directory, but, roughly
+something like this should work: 
+
+-------------------------------cut here-----------------------------------
+/* This isn't the best of examples, as we do not even bother remember the
+lion_t node returned by connect and so on. So it assumes you only
+really have one connection, and therefor only get events from one lion
+connection. But it serves as an example. */
+
+#include <stdio.h>
+#include "lion.h"
+
+
+static int do_exit = 0;
+
+int main(int argc, char **argv)
+{
+	lion_init();
+	lion_compress_level( 0 );  // No compression thanks
+
+	lion_connect("localhost", 21, NULL, 0, LION_FLAG_NONE, NULL);
+
+	while( !do_exit) {
+		lion_poll(0, 10);
+	}
+	lion_free();
+}
+
+int lion_userinput( lion_t *handle, 
+                    void *user_data, int status, int size, char *line)
+{
+	switch( status ) {
+
+	case LION_CONNECTION_LOST:
+		printf("Connection was lost.\n");
+		break;
+
+	case LION_CONNECTION_CLOSED:
+		printf("Connection was gracefully closed.\n");
+		break;
+
+	case LION_CONNECTION_CONNECTED:
+		printf("Connection successfully established.\n");
+		break;
+
+	case LION_INPUT:
+		printf("Connection has input: '%s'\n", line);
+		break;
+
+	default:
+		break;
+        }
+}
+-------------------------------cut here-----------------------------------
+
+  /\/\
+ / / /\
+/ / / /  What about binary, or chunk-by-chunk data transfer?
+\____/
+
+There is an API call to set a handle into binary mode:
+
+    void lion_enable_binary(lion_t *handle);
+    void lion_disable_binary(lion_t *handle);
+
+There is an older, deprecated, function that _toggles_ the state of
+binary mode. It is suggested that the developer avoids this function.
+
+	void lion_setbinary(lion_t *handle);
+
+which usually would follow after lion_connect(), lion_accept(),
+lion_open(), lion_fork() calls. There is no race condition as the
+socket would not be put into read-fd until next iteration.
+
+You can also switch to binary at any time, and it works like a toggle
+so call it again to return back to text/line-by-line mode. When in
+binary mode note that size will have the amount of bytes in the
+buffer starting from "line". 
+
+	case LION_INPUT:  // TEXT input
+
+	case LION_BINARY:  // BINARY input
+
+
+
+
+
+   __
+  /  \
+ /  \/
+/\  /  * SSL/TLS options.
+\__/
+
+If the network library was compiled with SSL/TLS support the following
+additional functions can be called. The compiler switch "WITH_SSL" is
+required during compile time, as well the ssl and crypto libraries.
+
+The initialisation functions should be called and set before
+lion_init() is called.
+
+	void lion_ssl_ciphers( char *);
+	void lion_ssl_rsafile( char *);
+	void lion_ssl_egdfile( char *);
+
+These functions are to set the list of ciphers, the RSA certificate
+.pem file and the optional EGD socket path should the OS not have
+/dev/urandom.
+
+The default values of these functions should they not have been called
+are:
+
+cipher: "RC4-SHA:RC4-MD5:DHE-DSS-RC4-SHA:DES-CBC3-SHA:DES-CBC3-MD5:EDH-RSA-DES-CBC3-SHA:EDH-DSS-DES-CBC3-SHA"
+rsafile: "lion.pem"
+egdfile: "/var/run/egd-pool"
+
+If you only want client-side SSL support, and therefore do not require
+the use of a RSA certificate, simply let it fail to find the .pem
+file. The network library with disable server-side SSL automatically.
+
+To switch a socket into SSL/TLS use the following call:
+
+	int lion_ssl_set( lion_t *, ssl_type_t );
+
+The type is either LION_SSL_SERVER, or LION_SSL_CLIENT, to signify which
+end of the SSL/TLS protocol you are attempting to emulate. If
+TLS_SSL_SERVER is used, the RSA .pem file is required during
+lion_init().
+
+This function can be called on an already connected socket, as well as
+a newly created socket. Once the outcome of the secure switch is
+known, the network library issues an appropriate event via the API:
+
+LION_CONNECTION_SECURE_ENABLED
+LION_CONNECTION_SECURE_FAILED
+
+The network library user is not required to perform any tasks with
+these events, but if a secure socket is _required_ it is recommended
+that the user calls "lion_disconnect()" if the
+"LION_CONNECTION_SECURE_FAILED" event is received. The network layer
+will then close the socket and post the appropriate event.
+
+The type should either be LION_SSL_CLIENT, or LION_SSL_SERVER
+depending on which end of the connection you wish to be. Generally, if
+you are issuing a lion_connect() call, you should be LION_SSL_CLIENT.
+
+If the events are not desired the user can optionally call:
+
+	int lion_ssl_enabled( lion_t * );
+
+To determine the SSL/TLS status on a socket, from say within the
+connected event and decide if "lion_disconnect()" should be called. 
+
+To generate your own self-signed certificate you can use:
+
+openssl req -new -x509 -days 365 -nodes -out lion.pem -keyout lion.pem
+   __
+  /  \
+ /  \/
+/\  /  ******  SSL and events, and auto sensing.
+\__/
+
+One concern worth mentioning is the order in which we receive events
+with regards to connections and SSL enabled.
+
+Simplest case.
+
+- Application has already received the CONNECTED event on a socket,
+  and has decided to attempt to upgrade it to SSL now. An example of
+  this would be with the FTP protocol, after a "AUTH SSL" has been
+  exchanged.
+
+
+>>> lion_connect() and LION_SSL_CLIENT example: <<<
+
+(CONNECTED event has occurred at some point, and possibly IO.)
+
+[1] application calls lion_set_ssl();
+
+[2] as we are already connected, lion attempt to start SSL.
+
+[3] application receives either SECURITY_ENABLED, or SECURITY_FAILED
+	depending on the outcome.
+
+>>> lion_accept() and LION_SSL_SERVER example: <<<
+
+(CONNECTED event has occurred at some point, and possibly IO.)
+
+[1] application calls lion_set_ssl();
+
+[2] as we are already connected, lion attempt to start SSL.
+
+[3] application receives either SECURITY_ENABLED, or SECURITY_FAILED
+	depending on the outcome.
+
+Now for the slightly more complicated situations. The idea here is we
+ask for SSL before we are even connected. You are then guaranteed to
+receive either of the two SECURITY_ENABLED or SECURITY_FAILED events
+_before_ you receive the CONNECTED.
+
+The idea is then that your application can start to communicate its
+own protocol when it receives an CONNECTED event. (By sending the
+greeting or whatever is preferred). Your application can then chose to
+only accept SSL connections: If you receive SECURITY_FAILED simply
+call lion_disconnect(). You will then NOT receive the CONNECTED
+event. Or do nothing in that event, and your CONNECTED event handler
+can deal with both plain text, and SSL sockets.
+
+>>> lion_connect() and LION_SSL_CLIENT example: <<<
+
+[1] application calls lion_connect()
+[2] application calls lion_set_ssl() immediately after.
+
+[3] if the connection failed, lion posts CONNECTION_LOST
+ [3a] stop
+
+[4] if connection is successful, lion enters SSL authentication.
+
+[5] if SSL authentication fails, lion posts SECURITY_FAILED
+ [5a] if lion_close or lion_disconnect was called, lion posts CONNECTION_CLOSED
+ [5b] or if we are still connected, lion posts CONNECTION_CONNECTED.
+ [5c] stop
+
+[6] if SSL authentication succeeds, lion posts SECURITY_ENABLED
+ [6a] if lion_close or lion_disconnect was called, lion posts CONNECTION_CLOSED
+ [6b] or if we are still connected, lion posts CONNECTION_CONNECTED.
+ [6c] stop
+
+
+>>> lion_accept() and LION_SSL_SERVER example: <<<
+
+[1] application receives the CONNECTION_NEW event.
+[2] application calls lion_accept()
+[3] application calls lion_set_ssl() immediately after.
+
+[4] if the connection failed, lion posts CONNECTION_LOST
+ [4a] stop
+
+[5] if connection is successful ....
+
+[6] if connection has input, lion peeks to determine is it looks like
+	SSL
+
+[7] if appears not to be SSL, lion posts CONNECTION_CONNECTED 
+  [7a] stop 
+
+[8] if SSL authentication fails, lion posts SECURITY_FAILED
+ [8a] if lion_close or lion_disconnect was called, lion posts CONNECTION_CLOSED
+ [8b] or if we are still connected, lion posts CONNECTION_CONNECTED.
+ [8c] stop
+
+[9] if SSL authentication succeeds, lion posts SECURITY_ENABLED
+ [9a] if lion_close or lion_disconnect was called, lion posts CONNECTION_CLOSED
+ [9b] or if we are still connected, lion posts CONNECTION_CONNECTED.
+ [9c] stop
+
+   __
+  /  \
+ / __/
+/ __/  *** Encrypted files ?
+\__/
+
+As of version 1.63 (io.c) you can now ask files to be encrypted on
+disk. Currently it only uses blowfish cipher, but there is no reason
+why we could not support all ciphers in libcrypto. (stream ciphers).
+
+After you open your file ( lion_open() ) issue:
+
+	void lion_ssl_set( handle, LION_SSL_FILE );
+
+You should also call
+
+	void lion_ssl_setkey( handle, char *key, int size )
+
+To set the key for the file. The rest is transparent. Both text input
+and binary mode will work as per usual. Be aware that if you get the
+key wrong, and are in text mode, you will receive interesting
+garbage. (But lion should never crash from it). Both these calls (in
+any order) should be done right after you open the file, so that no
+data is delivered.
+
+WARNING:
+
+If you are to use encrypted files please be aware that if you use
+lion_fileno() and lseek() it will NOT work. (Except if you lseek to
+the very start of the file, then call lion_ssl_setkey() again - this
+clears the ivec and num again.
+   __
+  /  \
+ /\__/
+/   /  *** Buffering? Flow-control ?
+\__/
+
+While this is more complicated, it is also done for you. As lion has no
+way to know that two handles are supposedly connection, and there is
+no real way for it to know that either, it is currently handled
+differently. 
+
+Basically, how it works is that the output calls (printf, output and
+send) will always succeed. They do this by buffering if the write()
+would block, and if the buffer is full, it doubles the buffer space. 
+
+However, you could fairly quickly this could be dangerous. For example
+if you have a handle that is reading at a high rate (like 1M/s) but
+your sending socket is only going at a much slower rate. (say, 10k/s).
+
+Within 10 seconds you would have a 10MB buffer!
+
+So, the idea is, when a output command required the use of the output
+buffer (internal to lion) it will send the application the
+LION_BUFFER_USED even.
+
+The application should then call 
+
+	void lion_disable_read( lion_t *handle );
+
+on the _reading_ handle. This will stop input processing on the
+incoming handle, so that your outgoing socket can catch up.
+
+Once the output buffer has been emptied out, lion will issue the
+application the LION_BUFFER_EMPTY event, and it should call
+
+	void lion_enable_read( lion_t *handle );
+
+On back you go. This slows down the reading to match that of the
+writing speed. Buffer will probably never grow, unless the data is
+expanded.
+   __
+  /  \
+ / / /
+/ / /  Diagrams of flow control:
+\__/
+
+Method two, text mode.
+
+read handle            |    application          | write socket
+----------------------------------------------------------------
+                       |                         |               
+line "hello" -->       |                         |               
+                       |  --> "hello"            |               
+                       |  parsing, action, send  |               
+                       | data "world" -->        |               
+                       |                         | --> "world"   
+                       |                         | no or partial write
+                       |                         | set write trigger to
+                       |                         | empty buffer when 
+                       |                         | possible, return
+                       |  *[1]                   | <-- OK, but buffered.
+                       |            OK+buff <--  |               
+                       |  Signal read socket to  |               
+                       |  sleep, request buffer  |               
+                       |  empty event.           |               
+                       | <-- sleep               |               
+            sleep <--  |                         |               
+Set socket to sleep    |                         |               
+                       |  want buffer-empty      |               
+                       |  event             -->  |               
+                       |                         | --> arm event
+                       |                         |               
+                       |                         | Buffer emptied,
+                       |                         | send event.   
+                       |                         | <-- buffer empty
+                       |       buffer empty <--  |               
+                       | Send wake-up            |               
+                       | <-- resume              |               
+           resume <--  |                         |               
+ set socket to read    |                         |               
+ 
+
+*[1] - Note that this write is essentially successful, but buffered
+ because of network lag. The application can continue to send data,
+ which will continue to be buffered. The buffer should grow
+ dynamically as well, transparently. Since the buffer grows you don't
+ _technically_ need to issue the sleep, but with TCP timeouts being
+ large, you could end up with a monstrous buffer if the read is
+ frivolous.
+
+Whether or not we send "OK, but buffered" immediately we need to
+buffer, or only after some water-mark has been reached is
+implementation specific. The OS will also buffer it, so if we need to
+buffer, the OS has probably some 64k buffered already. Water mark may
+not be required.
+
+// ***************************************************************
+// ********** File IO Functions
+// ***************************************************************
+
+  /\/\
+ / / /\
+/ / / /  What about if I want to read, or write files?
+\____/
+
+The best way is to use the lion API for file IO, which is:
+
+	lion_t *lion_open( char *file, int flags, mode_t modes, 
+		int lion_flags, void *user_data );
+
+Which works fairly similar to that of normal open(). File is the
+filename, flags the usual (O_RDONLY, O_CREAT etc) flags, note it is
+better if you do not use O_EXCLUSIVE as this does not exist under
+WIN32. Instead, use "lion_flags" to indicate you want exclusive access
+to the file.
+
+Available lion_flags are:
+
+	LION_FLAG_NONE		- Do nothing special
+	LION_FLAG_FULFILL	- Always return a valid node, signal failure
+					with events.
+	LION_FLAG_EXCLUSIVE	- Open file in exclusive mode.
+
+You can call lion_disconnect(), lion_close(), lion_printf(),
+lion_send() and lion_output() as per other methods.
+
+NOTE: If you are opening a file for writing, you should call
+lion_disable_read() afterwards. Otherwise the lion library will try to
+read from it, receive EOF, and close it. Perhaps lion should do this
+automatically since it knows you asked for a file in write-only mode?
+
+NOTE:
+Windows' users should be aware that opening files in read-write mode
+is currently not implemented.
+
+NOTE: If you do not use LION_FLAG_FULFILL, the handle returned by
+lion_open() (if not NULL) is valid to be used immediately. All other
+lion methods, you need to wait for the appropriate event signalling
+readiness. (_CONNECTED, _PIPE_RUNNING, _FILE_OPEN). This should be
+changed to automatic buffering. See TODO section.
+
+
+// ***************************************************************
+// ********** Pipe IO Functions
+// ***************************************************************
+   __
+  /  \
+ /   /
+/  \/  Calling another program and dealing with it's I/O
+\__/
+
+You can fork off a child process and have a pipe to communicate with
+it, as well as, executing another program and communicate with it. If
+you wanted to, rather than using file IO to read file "/tmp/roger" you
+can pipe off "cat /tmp/roger" instead. Although this isn't as
+efficient of course, it is merely mentioned as an example.
+
+To simply fork() a new process, and have CPU return to both child and parent:
+
+	lion_t *lion_fork( int (*start_address)(lion_t *,void *),
+		int flags, void *user_data, void *arg);
+
+This differs slightly from traditional Unix fork() but this is to be
+compatible with the Win32 version. There are some side issues that
+needs to be made aware here. 
+
+"start_address" is a function pointer, that takes a lion_t *handle
+which is the pipe back to the parent process, plus your user_data
+pointer, if set and an optional "arg" pointer.
+
+Generally, I suspect most users of this API probably will not call
+lion_fork() directly, but one of lion_system() or lion_execve(). 
+
+NOTE - It is best if you call lion_fork() for any forking work you
+need to do. However, an exception to that is if you want to daemonise,
+you can just call normal fork() and do the usual dup2() and setsid() business
+before you call lion_init().
+
+Please be aware that you can't just call "_exit()" as a child, as that
+would take the parent process with you under Windows. If you need to
+explicitly exit the child, and returning from your "start_address"
+function is not feasible, you can call:
+
+	void lion_exitchild( int return_code );
+
+Please be aware the under Win32, the lion_fork() function does not, in
+fact, create a new process but merely a new thread. Lion could have
+opted to go for a full fork() implementation like that of cygwin, but
+decided it was undesirable. A new thread is quite fast, but certain
+steps needs to be taken to ensure it works.
+
+If you are defining variables globally (or statically to a module) you
+need to ensure you get a new fresh copy of this variable after you
+call lion_fork (only under Win32, but if you want to be portable, you
+should use this in Unix too) you can declare your variables as:
+
+	THREAD_SAFE lion_t *linked_list_head = NULL;   or
+	THREAD_SAFE unsigned int length = 0;
+
+So, this has the nice side effect that you can call lion_fork(), and
+in your child, (which has been released under Unix, and is thread_safe
+under Windows) you can now call lion_poll() as per usual!
+
+The only node already in the lion library, under effect from
+lion_poll() is the pipe node back to parent, which you can use as per
+normal to send and receive information between processes. 
+
+NOTE:
+
+You will most likely set a new event handlers (using lion_set_handle)
+in your child, or suffer the consequences. (It will work, but under
+Win32 it is messy)
+
+However, if you fork just to run another program, use....
+
+	lion_t *lion_execve( char *base, char **argv, char **env,
+		int with_stderr, void *user_data );
+
+Start a child process to communicate with. Works very similar to that
+of execve() (which is the function it eventually calls.)
+
+You need to prepare the argv[] list before you call this. You use
+"with_stderr" to determine if you want "stderr" to be redirected as
+input to the parent, or have it redirected to /dev/null. "env" should
+be a list of strings as explained in "man execve". Generally
+"HOME=/usr/home/lundman" and similar.
+
+	lion_t *lion_system( char *cmd, int with_stderr, void *user_data );
+
+Wrapper to lion_execv() which takes a string of the command you wish
+to execute, break it up into argv[] based on spaces, and is "" aware.
+
+contrib/libdirlist is a good example of the use of lion_fork(). It
+spawns N new children, that the main lion application can communicate
+with using the pipe between the two.
+
+There are a few samples in the samples/ directory that show how to use
+lion_execve() and lion_system().
+
+// ***************************************************************
+// ********** Rate limiting in kilo bytes per second.
+// ***************************************************************
+
+Any lion handle can be rate limited. This means you can set the
+maximum speed of input, and output. Please be aware that it is more
+efficient to limit a reader as opposed to a writer, but not always
+possible. The writer rate limit is purely advisory and up to you to
+follow it.
+
+Please note there are two types to this. The global "total cps rate"
+limit set for "everything" in lion, and the "groups" set limit which
+is explained later.
+
+Use:
+	void lion_rate_in ( lion_t *handle, int cps);
+	void lion_rate_out( lion_t *handle, int cps);
+
+By setting the input rate limit, your input handler will only get
+events when the rate of input is less or equal to that of your "cps"
+setting. Be aware that this is only as accurate as the frequency of
+which you call lion_poll(). Ie, if you want 1k/s, then you need to
+call lion_poll() which a sleep of 1 second, or less. If you need only
+8k/s, you can call lion_poll with a sleep of 8 seconds etc. (Certainly
+if you only have one connection going).
+
+The output rate limit works by sending "fake" BUFFER_USED events when
+the output rate as exceeded you specified rate. You should then stop
+sending until BUFFER_EMPTY is received, and if you do this for
+buffering anyway, it is automatic. If you chose to ignore the
+buffering events, the output rate limit is not enforced.
+
+  /\/\
+ / / /
+/ / / *** UDP support.
+\__/
+
+UDP in lion works very similar to that of normal TCP, or any other
+type really. However, one can think of two levels of UDP support, the
+rudimentary support, and the slightly more advanced version.
+
+The first way to use UDP is the most basic, open a datagram socket to
+send from, and receive from. You will receive all packets that come
+in, and it is up to you to deal with it as appropriate.
+
+To create yourself a new UDP socket, use:
+
+	lion_t *lion_udp_new( int *port, unsigned long iface,
+		int lion_flags, void *user_data );
+
+Where "port" is optional local port to use, or pass NULL (or set port
+to 0 before calling) to open the first available port in your OS's
+anonymous range. Incoming data come with the usual LION_INPUT and
+LION_BINARY events for the handler set. (Or default handler).
+
+When you receive input, the host and port to reply is already set (and
+you can additionally inspect it using lion_getpeername() ). So you can
+also just call lion_printf(), lion_send() or lion_output() right here.
+
+However, if you are wishing to send to a specific socket, on a new
+udp socket, or having not just received information you need to use a
+two step process.
+
+First assign the host/port of the destination using:
+
+	lion_t *lion_udp_bind( lion_t *handle, unsigned long host,
+		int port, NULL );
+
+and then you can use the normal lion output functions (lion_printf,
+etc). 
+
+NOTE: The user_data field is NULL! This means it should merely set a
+new host/ip for an existing node, and not create a new instance as
+discussed in the advanced section.
+   __
+  /  \
+ / / /
+/   /  Advanced UDP.
+\/_/
+
+In many situations, like that of games perhaps, you want to assign a
+specific handle to a unique instance, and perhaps more importantly the
+user_data, so that you receive events with only that specific node.
+
+Perhaps a good way to explain it is to think in terms of a game. You
+open a listening UDP socket that will receive input from
+everywhere. Once your protocol has progressed far enough to create a
+new player in your game, and assigns it a unique node for that player
+you can ask for a (new) bound lion_t type for that particular player's
+host/ip. To which you can use the user_data to point to this new
+players data.
+
+Any future data received from that player's host and ip will come in
+as the NEW lion_t handle, which that players user_data. Additionally,
+you do not need to call lion_udp_bind() to communicate with THAT
+player, you can just call lion_printf() on THAT users NEW handle. 
+
+Even thought technically it still uses just the one UDP socket, lion
+will automatically pass your the correct handle and user_data based on
+the remote IP/host pair. Any non-registered input (input that isn't
+bound to any specific lion_t) will come to the initial/default handle.
+
+Please note that you can close the initial handle, and just use the
+newly bound handle. This means you will no longer receive data that is
+NOT from any registered host/ip. If that is so desired. 
+
+Additionally, you can create a new UDP socket, then bind it
+specifically to a known IP/port directly. You will only receive
+information from this host. (No unknown/anonymous packets is passed to
+you).
+
+To create a new handle/instance for a udp socket, use:
+
+	lion_t *lion_udp_bind( lion_t *handle, unsigned long host,
+		int port, void *user_data );
+
+	lion_t *lion_udp_bind_handle( lion_t *handle,
+		lion_t *handle,void *user_data );
+
+With user_data being NOT NULL, we create a new instance of lion_udp
+and return a new lion_t handle. The latter function takes the host/ip
+from an existing connection, often used with the LION_INPUT event to
+assigned a new handle from one that we just received information.
+
+Once all instances of a UDP socket has been closed, the actual socket
+is also released.
+
+You should probably avoid large packets, or packets that would require
+fragmentation. The limit usually lies somewhere around 1500 bytes.
+
+Buffering may not always make sense with UDP. You can chose to ignore
+the buffering events, or try to deal with them. But by nature udp is
+not guaranteed.
+
+
+Please see the samples directory for further information.
+   __
+  /  \
+ / __/
+/ / /  *** GROUPS rate control.
+\__/
+
+In conjuction with the total capping control lion has, we also provide
+a means to group connections together and set a cap on them. This
+gives you the ability to put a rate limit on a single connection
+(group of one) or a group of connections (say, any connection done as
+a certain user). Lion has no knowledge of such application specific
+information as to what a "user" is, it is up to the application to set
+the grouping requirements.
+
+Group work by asking for an available group from lion, which is simply
+an "integer". It is better if the application attempts not to
+interpret this value, or assume that it is always contiguous. It could
+be changed to a pointer in future.
+
+You ask for a new group with:
+
+	int lion_group_new( void );
+
+It is up to you to remember this value. Similarly you release it when
+you are done with it:
+
+	void lion_group_free( int group );
+
+To set the specific limits of this group is set by:
+
+	void lion_group_rate_in( int group, int limit);
+	void lion_group_rate_out( int group, int limit );
+
+Where "limit" is in K per second. Setting it to "8" would limit the
+connection(s) to a maximum of 8192 bytes / second.
+
+To assign, or remove, a lion_t into/from a group that you have created:
+
+	void lion_group_add( lion_t *handle, int group);
+	void lion_group_remove( lion_t *handle, int group);
+
+Alas, currently a lion_t handle can only belong to ONE group at a
+time. This is a limitation that we can fix in future. (Technically,
+you can belong to two groups, the global rate limit - group 0 - and
+any other group set here).
+
+
+Please be aware that "rate limit out" is purely advisory, ie it sends
+the buffering events LION_BUFFER_USED/EMPTY as needed to maintain rate
+limit, but if your application opts to ignore these then the rate
+limit is pointless.
+
+Please also be aware of the frequency of lion_poll() execution as
+discussed in the global rate limit.
+
+Finally, rate_out is by far the most inefficient. A better solution,
+if it is at all possible in your application would be to rate the
+reader. If for example you are reading from a file to send on a
+socket, it is MUCH more efficient to use
+lion_group/global_rate_in() on the FILE HANDLE, as opposed to setting
+a limit on rate_out on the network handle.
+
+
+
+
+
+
+
+*** DEBUGGING
+
+Lion has some debug support built into it. I frequently found it
+frustrating to attempt to follow one lion_t handle when I had many
+handles going. So I added support to _trace_ a particular lion_t
+handle (or as many as you want).
+
+You can turn on tracing either by calling the direct functions:
+
+		void lion_enable_trace(lion_t *);
+		void lion_disable_trace(lion_t *);
+
+Or another alternative is to use the flag LION_FLAG_TRACE with any of
+the lion_t creation functions. For example: lion_connect, lion_listen,
+lion_accept, lion_fork, lion_execve, lion_open and lion_udp_new. (Any
+function that accepts the lion_flag type).
+
+By default the output of tracing is to "stderr". However, you can
+specify and alternative log file by using the function:
+
+		void lion_trace_file(char *filename);
+
+Presumably you should call this before you enable your first lion_t
+handle to be traced.
+
+
+
+
+
+
+
+*** TIMERS
+
+Lion has a simple set of timer functions. They generally are accurate
+to 0.01 seconds, but they are not real-time timers. Lion will make a
+good effort to honour timers on the appropriate moment, but do not
+expect them to be sufficient for real time applications like NTP etc.
+
+To arm a timer, you can use:
+
+	   timers_t *timers_new(unsigned long major, unsigned long minor, 
+							int flags, lion_timer_t callback, void *userdata);
+
+
+Where the arguments major and minor change slightly dependent on the
+flags used. If the timer is in relative time, then major and minor
+specifies "seconds" and "micro seconds (usec)" from now. If set to 4
+and 50000 respectively, the timer will trigger in 4.5 seconds from
+being created.
+
+If flags specify TIMERS_FLAG_ABSOLUTE, then major and minor become
+hours and minutes of the day. If set to 15 and 42, the timer will
+trigger at 15:42 in the afternoon.
+
+The valid flags are:
+
+	TIMERS_FLAG_RELATIVE  : Default type
+	TIMERS_FLAG_ONESHOT   : Default type
+	TIMERS_FLAG_REPEAT    : REPEAT this timer indefinitely. Instead of ONESHOT
+	TIMERS_FLAG_ABSOLUTE  : Set absolute time of day, instead of RELATIVE.
+
+Callback is the function to be called when the timer expires. Defined
+as:
+
+		lion_timer_t callback(timers_t *timer, void *userdata);
+
+"userdata" is a normal "void *" value that just passed along for the
+API user's benefit.
+
+
+  /\__________________ 
+ /     /    ___  /  _/
+/   / / /  /\   /  _/  !NOTE!
+\__/_/\___/  \_/___/
+
+Please be aware that, unless TIMERS_FLAG_REPEAT has been specified,
+the timers_t structure is released immediately after the callback
+function has been executed. Do not refer to this structure after.
+
+In addition to this, if TIMERS_FLAG_REPEAT is specified, it is
+perfectly valid for the callback function to modify the values of the
+timers_t structure. For example, the function could increase the
+values of major and minor to adjust when the next repeated timer
+expires. Or change the callback function to call for the next trigger.
+
+
+
+
+Return values are a pointer to a timer_t, which is a structure holding
+the timer information. The function will return NULL if the timer
+could not be created.
+
+At the time of this documentation, the timers_t structure is defined
+as:
+
+struct timers_struct {
+	struct timeval when;
+	unsigned long major;
+	unsigned long minor;
+	int flags;
+	lion_timer_t callback;
+	void *userdata;
+};
+
+The value "when" is computed automatically when the timer is created,
+so changing its value will have no effect.
+
+Please note, if you would rather allocate your own timer, using the
+"timers_newnode()" function, you can call timers_add(timers_t *node)
+instead of timers_new(). But it has no immediate advantage in doing
+so.
+
+
+
+Timers can be cancelled before the trigger, or at any time if they are
+REPEATING timers by calling:
+
+		  int timers_cancel(timer_t *timer);
+
+As with calling timers_freenode(), the timer structure is released and
+should not be referenced after calling timers_cancel().
+
+
+  /\__________________ 
+ /     /    ___  /  _/
+/   / / /  /\   /  _/  !NOTE!
+\__/_/\___/  \_/___/
+
+Currently repeating timers, although generally accurate to 0.01
+seconds between each trigger, will accumulate errors over time. This
+can be fixed if so that it is repeated based on epoch time. Please
+contact me if this is the case. You could also use ABSOLUTE time, and
+increase the major/minor values in your callback to simulate a
+work-around to this problem. (Alas, with less precision).
+
+
+
+
+
+   __
+  /  \
+ / __/
+/   /  *** CAVEAT
+\__/
+
+Finally, the biggest and most common mistake done when using this
+network library, including when I use it myself :) is that I forget to
+pass the actual handle rather than whatever node I use internally. If
+I have defined a "net_node" structure to hold the information
+required, as well as the "handle" used when talking to the network
+library, I often find myself calling the lion_* function with just
+"net_node" as opposed to "net_node->handle".
+
+
+   ____
+  /   /
+  \/ /
+  / /  *** TO ADD, TO DO, SUGGESTIONS, MISSING BITS, BUGS
+  \/
+
+- lion_tie/marry/untie/divorce API calls
+- Windows files open for read and write. (just read, or just write
+  is done)
+- Windows pipe children currently does not connect <stdin> on child to
+  the pipe to parent process. This most likely needs a thread just to
+  relay data between the two.
+
+tie() details:
+
+Semantics. If the reader socket is closed (finished) lion will issue
+_CLOSED even as per normal, and the other end is _also_ closed
+automatically! This takes care of the most common situation where the
+application want to do a 1:1 transfer.
+
+However, you can optionally call lion_untie() on the handles in the
+_CLOSED event, this tells lion you wish to keep the writer open. lion
+will then re-issue the _CONNECTED event to tell the application that
+the socket is once again ready and available. You could then open a
+new handle, and tie again. 
+
+For example, to send a whole score of items down one writer pipe, you
+could have
+
+case LION_CONNECTION_CONNECTED:
+
+   for item in (big list of items)
+      handle = lion_connect on $item
+      lion_tie(handle, writer);
+	  
+   break;
+
+case LION_CONNECTION_CLOSED:
+   lion_untie(handle);
+   break;
+
+
+Other TODO:
+
+contrib/libresolve
+
+If you call lion_connect() (other calls to?) and then issue
+lion_printf/output before the socket is connected, the data is just
+lost. There is no reason why lion could not just buffer this data
+(buffering logic already exists) and assuming successful connection
+send it at that time.
+
+
+
+==============================================================================
+- cleanup v1 by Truck:
+	Fixed code indentation from random-whacked to aligned-readable
+		(Corrected many spaces to tabs.)
+	Removed references to 'lnet' - replaced with 'lion'
+		(lnet was version 1.0  (:  )
+	Added ascii headers (Which will get bitched about)
+	Attempted to fix Lund's preoccupation with inserting 300 blank lines
+		between ... well... everything...
+	Fixed odd subgroupings (8b,8c,8d... no 8a?)
+	Removed some (not all yet) of the 'banter' type documentation
+		i.e. 'That's cute, but how about complex Buffer/Flow Control?'
+	Document actually readable as of now, still needs additional cleaning
+		and man/info/html pages created
+
+	Revision performed in (X)emacs using FUNDAMENTAL mode (as text mode
+		was causing EXTREME tab damage in many areas.
+
+	Document should not be at all considered REVISED as very little time
+		was spent reading, instead, time was spent trying to make the
+		document such that I could use it as reference. Occasional
+		gramamtical/phrasing items were edited to increase readability
+		but content was NOT revised or even reviewed.
+	* THERE COULD BE GLARING ISSUES WITH THIS DOCUMENT AS IT REEKS OF
+			HAVING BEEN EDITED OCCASIONALLY *
+

@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual C++ Express 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clomps", "clomps\clomps.vcproj", "{5B27165B-CC74-4A9C-A6D8-53078821D972}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4E103D8B-9417-4502-BA95-914330BBC3B9} = {4E103D8B-9417-4502-BA95-914330BBC3B9}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lion", "..\..\..\lion\win32\lion.vcproj", "{4E103D8B-9417-4502-BA95-914330BBC3B9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5B27165B-CC74-4A9C-A6D8-53078821D972}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5B27165B-CC74-4A9C-A6D8-53078821D972}.Debug|Win32.Build.0 = Debug|Win32
+		{5B27165B-CC74-4A9C-A6D8-53078821D972}.Release|Win32.ActiveCfg = Release|Win32
+		{5B27165B-CC74-4A9C-A6D8-53078821D972}.Release|Win32.Build.0 = Release|Win32
+		{4E103D8B-9417-4502-BA95-914330BBC3B9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4E103D8B-9417-4502-BA95-914330BBC3B9}.Debug|Win32.Build.0 = Debug|Win32
+		{4E103D8B-9417-4502-BA95-914330BBC3B9}.Release|Win32.ActiveCfg = Release|Win32
+		{4E103D8B-9417-4502-BA95-914330BBC3B9}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
