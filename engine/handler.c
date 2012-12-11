@@ -355,16 +355,17 @@ void handler_queue(session_t *session, int event, int id, int reply,
 	switch(event) {
 
 	case SESSION_EVENT_LOST:
-		debugf("[handler_queue] lost event\n");
+		debugf("[handler_queue] lost event.\n");
 
 		// We no longer have a session.
 		node->old_session = node->session;
 		node->session = NULL;
-		if (node->id == queue->north_sid)
-			queue->north_sid = 0;
-		if (node->id == queue->south_sid)
-			queue->south_sid = 0;
-
+		if (queue) {
+		  if (node->id == queue->north_sid)
+		    queue->north_sid = 0;
+		  if (node->id == queue->south_sid)
+		    queue->south_sid = 0;
+		}
 		//node->id = 0;
 		//queue->state = QUEUE_ITEM_FAILED;
 

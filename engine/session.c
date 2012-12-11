@@ -743,6 +743,7 @@ void session_setclose(session_t *session, char *reason)
 	if (session->handle) {
 
 		lion_set_userdata(session->handle, NULL);
+		lion_disable_read(session->handle);
 		lion_close(session->handle);
 		session->handle = NULL;
 
@@ -764,7 +765,6 @@ void session_setclose(session_t *session, char *reason)
 
 	// FIXME, this WILL access free'd memory.
 	//session_free(session);
-
 }
 
 

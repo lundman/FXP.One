@@ -177,6 +177,6 @@ fi
 
 
 AM_CONFIG_HEADER([config.h])
-AC_CONFIG_FILES([Makefile src/Makefile contrib/Makefile contrib/libdirlist/Makefile contrib/libdirlist/win32/Makefile python/Makefile win32/Makefile samples/Makefile samples/fork/Makefile samples/get-file/Makefile samples/getdirs/Makefile samples/relay/Makefile samples/send-file/Makefile samples/ssl-connect/Makefile samples/ssl-listen/Makefile samples/system-send/Makefile samples/system/Makefile samples/template/Makefile samples/timers/Makefile samples/udp-pong/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile contrib/Makefile contrib/libdirlist/Makefile contrib/libdirlist/win32/Makefile python/Makefile win32/Makefile samples/Makefile samples/fork/Makefile samples/get-file/Makefile samples/getdirs/Makefile samples/relay/Makefile samples/send-file/Makefile samples/ssl-connect/Makefile samples/ssl-listen/Makefile samples/system-send/Makefile samples/system/Makefile samples/template/Makefile samples/timers/Makefile samples/udp-pong/Makefile samples/lock-test/Makefile])
 AC_OUTPUT
 

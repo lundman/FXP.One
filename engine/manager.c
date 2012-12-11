@@ -273,8 +273,16 @@ void manager_cleanup(void)
 		if (node->old_session) {
 			debugf("[manager] Cleaning up old session: %p\n",
 				   node->old_session);
+
+			if (node->old_session->handle)
+			  lion_set_userdata(node->old_session->handle, NULL);
+			if (node->old_session->data_handle)
+			  lion_set_userdata(node->old_session->data_handle,
+					    NULL);
+
 			session_free(node->old_session);
 			node->old_session = NULL;
+			node->session = NULL;
 		}
 
 
