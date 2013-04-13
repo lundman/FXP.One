@@ -139,9 +139,9 @@ connection_t *lion_open(char *file, int flags, mode_t modes,
                 } else { // lock worked?
 
                     // Got lock, do we truncate? Append?
-                    if (flags|O_TRUNC)
+                    if (flags&O_TRUNC)
                         ftruncate(newd->socket, 0);
-                    if (flags|O_APPEND)
+                    if (flags&O_APPEND)
                         lseek(newd->socket, SEEK_END, 0);
 
                 }
