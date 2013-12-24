@@ -119,11 +119,12 @@ connection_t *lion_open(char *file, int flags, mode_t modes,
         {
             struct fshare locker;
             int ret;
-            locker.f_access = F_WRACC;
+            locker.f_access = (flags&O_RDONLY) ? F_RDACC : F_WRACC;
             locker.f_deny = F_WRDNY;
 
             // Does the file already exist?
             newd->socket = open( file, O_RDWR, modes );
+            //newd->socket = open( file,flags, modes );
             if (newd->socket >= 0) {
 
                 // id should just be something unique, and filedes are that

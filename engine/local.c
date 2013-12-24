@@ -152,6 +152,8 @@ struct cmds_struct cmds[] = {
 	{ ""       , NULL           }
 };
 
+static void local_data(lion_t *engine);
+
 int local_main(lion_t *engine, void *user_data, void *arg)
 {
 
@@ -168,7 +170,9 @@ int local_main(lion_t *engine, void *user_data, void *arg)
 
 	while(!local_doexit) {
 
-		lion_poll(0, 1);
+		lion_poll(0, 5);
+
+        local_data(engine);
 
 	}
 
@@ -331,7 +335,7 @@ static void local_data(lion_t *engine)
 			file_handle = lion_open(local_data_args,
 									O_RDONLY,
 									(mode_t) 0644,
-									LION_FLAG_EXCLUSIVE | LION_FLAG_FULFILL,
+									/*LION_FLAG_EXCLUSIVE |*/ LION_FLAG_FULFILL,
 									engine);
 		} else {
 
@@ -342,7 +346,7 @@ static void local_data(lion_t *engine)
 			file_handle = lion_open(tmp,
 									O_RDONLY,
 									(mode_t) 0644,
-									LION_FLAG_EXCLUSIVE | LION_FLAG_FULFILL,
+									/*LION_FLAG_EXCLUSIVE |*/ LION_FLAG_FULFILL,
 									engine);
 			SAFE_FREE(tmp);
 		}
