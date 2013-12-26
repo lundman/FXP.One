@@ -759,7 +759,7 @@ void local_cmd_cwd(lion_t *engine, char *cmd, char *args)
 		debugf(" [local] trying combined '%s'\n", tmp);
 		isok = realpath(tmp, resolved) ? 1 : 0;
 
-		strncpy(resolved, tmp, sizeof(resolved)-1);
+		//strncpy(resolved, tmp, sizeof(resolved)-1);
 
 		SAFE_FREE(tmp);
 
