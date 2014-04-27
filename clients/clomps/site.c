@@ -452,8 +452,10 @@ void site_cmd_dirlist(char **keys, char **values, int items,void *optarg)
 			site->num_files++;
 
 			SAFE_COPY(file->name, name);
-			file->date = strtoul(date, NULL, 10);
-			file->size = strtoull(size, NULL, 10);
+            if (date)
+                file->date = strtoul(date, NULL, 10);
+            if (size)
+                file->size = strtoull(size, NULL, 10);
 			if (type && !mystrccmp("directory", type))
 				file->type = 1;
 
