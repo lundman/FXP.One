@@ -157,7 +157,7 @@ int main(int argc, char **argv)
 		exit(0);
 	}
 
-	conf_read(NULL);
+	conf_read();
 
 	if (!fxpone) {
 		printf("No FXPONE entry in .conf file error.\n");

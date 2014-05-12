@@ -51,7 +51,8 @@ typedef struct autoq_struct autoq_t;
 
 
 void     autoq_process    ( fxpone_t * );
-void     autoq_add        ( char *, char *, char *, char *, char *, char *, char *);
+void     autoq_add        ( char *, char *, char *, char *, char *, char *,
+                            char *);
 void     autoq_assign_sid ( unsigned int, char * );
 autoq_t *autoq_find_by_sid( unsigned int );
 void     autoq_check      ( fxpone_t * );

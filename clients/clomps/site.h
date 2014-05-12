@@ -36,6 +36,7 @@ struct site_struct {
 
 	char *inctest;
 	char *nuketest;
+    char *hide;
 };
 
 typedef struct site_struct site_t;
@@ -76,6 +77,6 @@ int site_listsok(site_t *site, file_t *file);
 void site_ready(lion_t *engine, site_t *site);
 site_t *site_find(char *name);
 char *status2str(status_t i);
-void site_savecfg(void);
+void site_savecfg(char *timefile);
 
 #endif

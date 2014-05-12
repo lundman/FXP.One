@@ -159,30 +159,63 @@ void autoq_freenode(autoq_t *aq)
     SAFE_FREE(aq);
 }
 
-
+/*
+ * Add fields to node. Allow function to be called repeatedly with
+ * NULL passnum/from/to and use last created node to append values to
+ * accept, reject and hide.
+ */
 
 void autoq_add(char *passnum, char *from, char *to, char *accept, char *reject,
                char *incskip, char *requeue)
 {
-	autoq_t *node;
+	static autoq_t *node = NULL;
+    char *tmp;
 
-	node = autoq_newnode();
+    printf("Autoq_add: '%s'\n", accept);
 
-	if (!node) return;
+    // Create new node if setting up a new autoq
+    if (passnum && from && to) {
+        node = autoq_newnode();
+
+        if (!node) return;
+
+        node->passnum = atoi(passnum);
+        SAFE_COPY(node->from,   from);
+        SAFE_COPY(node->to,     to);
+        if (incskip && *incskip)
+            node->incskip = 1;
+        if (requeue && *requeue)
+            node->requeue = 1;
+
+        if (node->passnum > max_pass)
+            max_pass = node->passnum;
+    }
 
 
-	node->passnum = atoi(passnum);
-	SAFE_COPY(node->from,   from);
-	SAFE_COPY(node->to,     to);
-	SAFE_COPY(node->accept, accept);
-	SAFE_COPY(node->reject, reject);
-    if (incskip && *incskip)
-        node->incskip = 1;
-    if (requeue && *requeue)
-        node->requeue = 1;
+    if (!node) return;
 
-	if (node->passnum > max_pass)
-		max_pass = node->passnum;
+    // Add in new values for last node
+    if (accept) {
+        if (!node->accept) {
+            SAFE_COPY(node->accept, accept);
+        } else {
+            tmp = node->accept;
+            node->accept = misc_strjoin(tmp?tmp:"", accept);
+            SAFE_FREE(tmp);
+        }
+    }
+
+    if (reject) {
+        if (!node->reject) {
+            SAFE_COPY(node->reject, reject);
+        } else {
+            tmp = node->reject;
+            node->reject = misc_strjoin(tmp?tmp:"", reject);
+            SAFE_FREE(tmp);
+        }
+    }
+
+    printf("autoq '%s' accept is now '%s'\n", node->from, node->accept);
 
 }
 
@@ -314,27 +347,35 @@ void autoq_process(fxpone_t *fxpone)
             // If not asked to move incompletes...
             if ((aq->incskip == 1) && (st == STATUS_INC)) continue;
 
-			// Since items are in the list if they are new ANYWHERE, we
-			// need to filter out only items that are new on SOURCE. Or
-			// we end up resending things all over.
-			if (new_files[j]->date <= src->last_check_autoq) continue;
+            // If asked to queue it from cmdline (-I pattern) we add
+            // it regardless.
+            if (!conf_autoqpattern
+                || !file_listmatch(conf_autoqpattern, new_files[j]->name)) {
 
-			st = site_status(dst, new_files[j]);
+                // Since items are in the list if they are new ANYWHERE, we
+                // need to filter out only items that are new on SOURCE. Or
+                // we end up resending things all over.
+                if (new_files[j]->date <= src->last_check_autoq) continue;
 
-            // If it was nuked on dst, ignore it
-            if (st == STATUS_NUKED) continue;
+                st = site_status(dst, new_files[j]);
 
-			// It could be MISS or INC on dst
-			if ((st != STATUS_MISS) &&
-				(st != STATUS_INC)) continue;
+                // If it was nuked on dst, ignore it
+                if (st == STATUS_NUKED) continue;
 
-			// Check that it matches Accept.
-			if (!file_listmatch(aq->accept, new_files[j]->name))
+                // It could be MISS or INC on dst
+                if ((st != STATUS_MISS) &&
+                    (st != STATUS_INC)) continue;
+
+                // Check that it matches Accept.
+                if (!file_listmatch(aq->accept, new_files[j]->name))
+                    continue;
+
+                // Check is passes the Reject list.
+                if (aq->reject && file_listmatch(aq->reject,
+                                                 new_files[j]->name))
 				continue;
 
-			// Check is passes the Reject list.
-			if (aq->reject && file_listmatch(aq->reject, new_files[j]->name))
-				continue;
+            } // cmdline autoq pattern
 
 			// This entry should be queued.
 			tmp = realloc(aq->files,
