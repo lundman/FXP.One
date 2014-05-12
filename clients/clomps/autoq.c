@@ -171,8 +171,6 @@ void autoq_add(char *passnum, char *from, char *to, char *accept, char *reject,
 	static autoq_t *node = NULL;
     char *tmp;
 
-    printf("Autoq_add: '%s'\n", accept);
-
     // Create new node if setting up a new autoq
     if (passnum && from && to) {
         node = autoq_newnode();
@@ -214,8 +212,6 @@ void autoq_add(char *passnum, char *from, char *to, char *accept, char *reject,
             SAFE_FREE(tmp);
         }
     }
-
-    printf("autoq '%s' accept is now '%s'\n", node->from, node->accept);
 
 }
 
