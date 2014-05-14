@@ -193,6 +193,8 @@ void conf_site(char **keys, char **values, int items,void *optarg)
 	char *name, *dir, *useskip, *inctest, *nuketest, *last_check, *hide;
 	site_t *site, **tmp;
 	char **dtmp;
+    char *strtmp;
+    int i;
 
 	name       = parser_findkey(keys, values, items, "NAME");
 	useskip    = parser_findkey(keys, values, items, "USESKIP");
@@ -205,6 +207,23 @@ void conf_site(char **keys, char **values, int items,void *optarg)
 		printf("SITE Entry in conf without NAME= field\n");
 		return;
 	}
+
+    // Attempt to find a site already defined by name, if found, allow
+    // HIDE to be concatenated.
+    for (i = 0; i < num_sites; i++) {
+        if (sites[i] && !mystrccmp(name, sites[i]->name)) {
+            if (hide) {
+                if (!sites[i]->hide) {
+                    SAFE_COPY(sites[i]->hide, hide);
+                } else {
+                    strtmp = sites[i]->hide;
+                    sites[i]->hide = misc_strjoin(strtmp?strtmp:"", hide);
+                    SAFE_FREE(strtmp);
+                }
+            }
+            return;
+        }
+    }
 
 	site = calloc(1, sizeof(*site));
 	if (!site) return;
@@ -299,8 +318,8 @@ void conf_autoq(char **keys, char **values, int items,void *optarg)
 	incskip    = parser_findkey(keys, values, items, "INCSKIP");
 	requeue    = parser_findkey(keys, values, items, "REQUEUE");
 
-	if (!passnum || !from || !to || !accept) {
-		printf("AUTOQ Entry in conf without PASSNUM, FROM, TO or ACCEPT fields.\n");
+	if (!passnum || !from || !to) {
+		printf("AUTOQ Entry in conf without PASSNUM, FROM, TO fields.\n");
 		return;
 	}
 
@@ -457,19 +476,15 @@ void conf_time(char *timefile)
 	lion_t *conf_file = NULL;
     char *tmp, *r;
 
-    sleep(2);
-
     if (!timefile) {
         tmp = misc_strjoin(conf_file_name, "timestamp");
         if ((r = strrchr(tmp, '/'))) *r = '.';
         conf_file = lion_open(tmp, O_RDONLY, 0600,
                               LION_FLAG_NONE, NULL);
-        printf("[conf] reading timestamps from '%s' ...\n", tmp);
         SAFE_FREE(tmp);
     } else {
         conf_file = lion_open(timefile, O_RDONLY, 0600,
                               LION_FLAG_NONE, NULL);
-        debugf("[conf] reading timestamps from '%s' ...\n", timefile);
     }
 
     // Not having a timestamp file is OK
