@@ -64,6 +64,7 @@ void options(char *prog)
 		printf("  -q          : process AUTOQ commands after comparison\n");
 		printf("  -n          : do not save updated timestamps to conf file\n");
 		printf("  -v          : verbose output\n");
+		printf("  -C <ciphers>: specify cipher list to openssl\n");
         printf("\n\n(c) Jorgen Lundman <lundman@lundman.net>\n\n");
 
         exit(0);
@@ -77,7 +78,7 @@ void arguments(int argc, char **argv)
 	int opt;
 
 	while ((opt=getopt(argc, argv,
-					   "hf:a:i:I:qnvd")) != -1) {
+					   "hf:a:i:I:qnvdC:")) != -1) {
 
 		switch(opt) {
 
@@ -115,6 +116,10 @@ void arguments(int argc, char **argv)
 
 		case 'd':
 			debug_on ^= 1;
+			break;
+
+		case 'C':
+			lion_ssl_ciphers(optarg);
 			break;
 
 		default:
