@@ -117,8 +117,7 @@ int tls_init( void )
 	SSL_library_init();                      /* initialize library */
 
 	tls_ctx = SSL_CTX_new(SSLv23_method());
-
-
+	
 	// Did we get SSL?
 
 	if (!tls_ctx) {
@@ -165,12 +164,16 @@ int tls_init( void )
 
 
 	// Set some options
+	//SSL_CTX_set_options(tls_ctx, SSL_OP_NO_SSLv2);
 	SSL_CTX_set_options(tls_ctx, SSL_OP_NO_SSLv2);
 #ifdef SSL_OP_NO_COMPRESSION
 	SSL_CTX_set_options(tls_ctx, SSL_OP_NO_COMPRESSION);
 #endif
 	//SSL_CTX_set_options(tls_ctx, SSL_OP_NO_SSLv3|SSL_OP_NO_TLSv1);
 	//SSL_CTX_set_options(tls_ctx, SSL_OP_NO_TLSv1);
+	SSL_CTX_set_options(tls_ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
+	//SSL_CTX_set_options(tls_ctx, SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION|SSL_OP_LEGACY_SERVER_CONNECT);
+
 	SSL_CTX_set_default_verify_paths(tls_ctx);
 
 
@@ -455,10 +458,11 @@ int tls_read(connection_t *node, void *buf, int num)
 	sslerr = SSL_get_error(ssl, status);
 
 #ifdef DEBUG_VERBOSE
-	printf("tls_read: %p: (SSL_read %d, sslerr %d, errno %d): ctx %p\n",
-           node,status,
-           sslerr, errno,
-           node->ctx);
+	printf("tls_read: %p: (SSL_read %d, sslerr %d, errno %d): ctx %p: %s\n",
+	       node,status,
+	       sslerr, errno,
+	       node->ctx,
+	       (char *)ERR_error_string(ERR_get_error(), NULL));
 #endif
 #ifdef DEBUG
 	if (node->trace)
@@ -507,8 +511,9 @@ int tls_read(connection_t *node, void *buf, int num)
 			break;
 		default:
 #ifdef DEBUG
-			printf("tls_read_error: %p %d,%d,%d\n", node, sslerr,
-				   status, errno);
+		  printf("tls_read_error: %p %d,%d,%d: %s\n", node, sslerr,
+			 status, errno,
+			 (char *)ERR_error_string(ERR_get_error(), NULL));
 #endif
 			return -1;
 		}
@@ -657,7 +662,6 @@ int tls_clauth( connection_t *node )
 
 	}
 
-
 	if (RAND_status() != 1) {
 		printf("ssl_init: System without /dev/urandom, PRNG seeding must be done manually\n");
 		node->use_ssl = 0;
@@ -666,9 +670,10 @@ int tls_clauth( connection_t *node )
 	}
 
 
-	SSL_set_cipher_list(node->ctx, ssl_tlsciphers);
+	// This breaks on Z
+	//SSL_set_cipher_list(node->ctx, ssl_tlsciphers);
 #ifdef SSL_OP_NO_COMPRESSION
-    SSL_CTX_set_options(node->ctx, SSL_OP_NO_COMPRESSION);
+	//SSL_CTX_set_options(node->ctx, SSL_OP_NO_COMPRESSION);
 #endif
 
 #ifdef DEBUG
@@ -776,7 +781,8 @@ void tls_cont_clauth( connection_t *node )
 			break;
 		default:
 #ifdef DEBUG
-   			printf("tls_clauth_cont: failed (status,sslerr,errno) %d %d %d\n", status, sslerr, errno);
+		  printf("tls_clauth_cont: failed (status,sslerr,errno) %d %d %d: %s\n", status, sslerr, errno,
+			 (char *)ERR_error_string(ERR_get_error(), NULL));
 #endif
 			if (node->trace)
 				fprintf(trace_file, "%p: tls_clauth_cont: failed (%d, %d, %d) => %s\n",
