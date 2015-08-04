@@ -172,7 +172,7 @@ int local_main(lion_t *engine, void *user_data, void *arg)
 
 		lion_poll(0, 5);
 
-        local_data(engine);
+        //local_data(engine);
 
 	}
 
@@ -224,7 +224,6 @@ static void local_data(lion_t *engine)
 		lion_enable_read(file_handle);
 		return;
 	}
-
 
 	// Only start when ready is == 2 (both LIST cmd, and data connected)
 	if (local_data_ready != 2) {
@@ -352,9 +351,11 @@ static void local_data(lion_t *engine)
 		}
 
 		lion_set_handler(file_handle, local_file_handler);
-		if (prot) {
+		if (prot && !lion_ssl_enabled(data_handle) ) {
+			printf(" [local] file read disabled until SSL\n");
 			lion_disable_read(file_handle);
 			waitssl = 1;
+			local_data_ready--;
 		}
 		lion_enable_binary(file_handle);
 		lion_enable_binary(data_handle);
@@ -1320,5 +1321,3 @@ int local_file_handler(lion_t *handle, void *user_data,
 
 	return 0;
 }
-
-

@@ -26,6 +26,7 @@ extern int optind;
 
 char    *conf_file_name  = NULL;
 char    *conf_incpattern = NULL;
+char    *conf_autoqpattern = NULL;
 time_t   default_age     = 0;
 int      conf_do_autoq   = 0;
 int      conf_do_save    = 1;
@@ -33,13 +34,14 @@ int      conf_do_verbose = 0;
 
 
 static parser_command_list_t conf_command_list[] = {
-        { COMMAND( "FXPONE" ),   conf_fxpone },
-        { COMMAND( "SITE"   ),   conf_site   },
-        { COMMAND( "AUTOQ"  ),   conf_autoq  },
-        { COMMAND( "IRC"    ),   conf_irc    },
-        { COMMAND( "TRADE"  ),   conf_trade  },
-        { NULL,  0           ,   conf_other  },
-        { NULL,  0           ,         NULL  }
+        { COMMAND( "FXPONE"    ),   conf_fxpone    },
+        { COMMAND( "SITE"      ),   conf_site      },
+        { COMMAND( "TIMESTAMP" ),   conf_timestamp },
+        { COMMAND( "AUTOQ"     ),   conf_autoq     },
+        { COMMAND( "CONTINUED" ),   conf_continued },
+        { COMMAND( "IRC"       ),   conf_irc       },
+        { COMMAND( "TRADE"     ),   conf_trade     },
+        { NULL,  0              ,         NULL     }
 };
 
 
@@ -51,16 +53,18 @@ void options(char *prog)
 
         printf("\n");
         printf("%s - FXP.One client compare.\n", prog);
-        printf("%s [-hqn] [...]\n\n", prog);
+        printf("%s [-hiqn] [...]\n\n", prog);
         printf("  options:\n");
 
         printf("  -h          : display usage help (this output)\n");
         printf("  -f <file>   : specify conf filename. Default clomps.conf\n");
         printf("  -a <sec>    : subtract <sec> from stored last_check time\n");
 		printf("  -i <pattern>: search for pattern. '*' would show all as new\n");
+		printf("  -I <pattern>: AUTOQ pattern. Always consider pattern for autoq\n");
 		printf("  -q          : process AUTOQ commands after comparison\n");
 		printf("  -n          : do not save updated timestamps to conf file\n");
 		printf("  -v          : verbose output\n");
+		printf("  -C <ciphers>: specify cipher list to openssl\n");
         printf("\n\n(c) Jorgen Lundman <lundman@lundman.net>\n\n");
 
         exit(0);
@@ -74,7 +78,7 @@ void arguments(int argc, char **argv)
 	int opt;
 
 	while ((opt=getopt(argc, argv,
-					   "hf:a:i:qnvd")) != -1) {
+					   "hf:a:i:I:qnvdC:")) != -1) {
 
 		switch(opt) {
 
@@ -94,6 +98,10 @@ void arguments(int argc, char **argv)
 			SAFE_COPY(conf_incpattern, optarg);
 			break;
 
+		case 'I':
+			SAFE_COPY(conf_autoqpattern, optarg);
+			break;
+
 		case 'q':
 			conf_do_autoq ^= 1;
 			break;
@@ -108,6 +116,10 @@ void arguments(int argc, char **argv)
 
 		case 'd':
 			debug_on ^= 1;
+			break;
+
+		case 'C':
+			lion_ssl_ciphers(optarg);
 			break;
 
 		default:
@@ -127,23 +139,26 @@ void arguments(int argc, char **argv)
 
 
 
-// FXPONE|HOST=127.0.0.1|PORT=8885|USER=admin|SSL=forced
+// FXPONE|HOST=127.0.0.1|PORT=8885|USER=admin|SSL=forced|TIMEFILE=name
 void conf_fxpone(char **keys, char **values, int items,void *optarg)
 {
-	char *host, *port, *user, *pass, *ssl;
+	char *host, *port, *user, *pass, *ssl, *timefile;
 	fxpone_t *fxpone;
 
-	host = parser_findkey(keys, values, items, "HOST");
-	port = parser_findkey(keys, values, items, "PORT");
-	user = parser_findkey(keys, values, items, "USER");
-	pass = parser_findkey(keys, values, items, "PASS");
-	ssl  = parser_findkey(keys, values, items, "SSL");
+	host     = parser_findkey(keys, values, items, "HOST");
+	port     = parser_findkey(keys, values, items, "PORT");
+	user     = parser_findkey(keys, values, items, "USER");
+	pass     = parser_findkey(keys, values, items, "PASS");
+	ssl      = parser_findkey(keys, values, items, "SSL");
+	timefile = parser_findkey(keys, values, items, "TIMEFILE");
 
 	if (!host) {
 		printf("FXPONE Entry in conf without HOST= field\n");
 		return;
 	}
 
+    // Don't need to save anymore
+#if 0
 	if (optarg) {
 		// Saving
 		lion_printf(optarg, "FXPONE|HOST=%s", host);
@@ -154,6 +169,7 @@ void conf_fxpone(char **keys, char **values, int items,void *optarg)
 		lion_printf(optarg, "\r\n");
 		return;
 	}
+#endif
 
 	// Create a new fxpone engine to connect to.
 	fxpone = fxpone_newnode();
@@ -171,6 +187,7 @@ void conf_fxpone(char **keys, char **values, int items,void *optarg)
 	if (ssl)
 		fxpone->ssl = atoi(ssl);
 
+    SAFE_COPY(fxpone->timefile, timefile);
 }
 
 
@@ -178,14 +195,17 @@ void conf_fxpone(char **keys, char **values, int items,void *optarg)
 //NUKETEST=!NUKED-%s
 void conf_site(char **keys, char **values, int items,void *optarg)
 {
-	char *name, *dir, *useskip, *inctest, *nuketest, *last_check;
+	char *name, *dir, *useskip, *inctest, *nuketest, *last_check, *hide;
 	site_t *site, **tmp;
 	char **dtmp;
+    char *strtmp;
+    int i;
 
 	name       = parser_findkey(keys, values, items, "NAME");
 	useskip    = parser_findkey(keys, values, items, "USESKIP");
 	inctest    = parser_findkey(keys, values, items, "INCTEST");
 	nuketest   = parser_findkey(keys, values, items, "NUKETEST");
+	hide       = parser_findkey(keys, values, items, "HIDE");
 	last_check = parser_findkey(keys, values, items, "LAST_CHECK");
 
 	if (!name) {
@@ -193,25 +213,22 @@ void conf_site(char **keys, char **values, int items,void *optarg)
 		return;
 	}
 
-	if (optarg) {
-		int i;
-		// Saving
-		lion_printf(optarg, "SITE|NAME=%s", name);
-		while ((dir = parser_findkey_once(keys, values, items, "DIR"))) {
-			lion_printf(optarg, "|DIR=%s", dir);
-		}
-		if (useskip)  lion_printf(optarg, "|USESKIP=%s", useskip);
-		if (inctest)  lion_printf(optarg, "|INCTEST=%s", inctest);
-		if (nuketest) lion_printf(optarg, "|NUKETEST=%s", nuketest);
-
-		for (i = 0; i < num_sites; i++)
-			if (sites[i] && !mystrccmp(name, sites[i]->name))
-				lion_printf(optarg, "|LAST_CHECK=%lu", sites[i]->last_check);
-		lion_printf(optarg, "\r\n");
-		return;
-	}
-
-
+    // Attempt to find a site already defined by name, if found, allow
+    // HIDE to be concatenated.
+    for (i = 0; i < num_sites; i++) {
+        if (sites[i] && !mystrccmp(name, sites[i]->name)) {
+            if (hide) {
+                if (!sites[i]->hide) {
+                    SAFE_COPY(sites[i]->hide, hide);
+                } else {
+                    strtmp = sites[i]->hide;
+                    sites[i]->hide = misc_strjoin(strtmp?strtmp:"", hide);
+                    SAFE_FREE(strtmp);
+                }
+            }
+            return;
+        }
+    }
 
 	site = calloc(1, sizeof(*site));
 	if (!site) return;
@@ -239,6 +256,7 @@ void conf_site(char **keys, char **values, int items,void *optarg)
 
 	SAFE_COPY(site->inctest, inctest);
 	SAFE_COPY(site->nuketest, nuketest);
+	SAFE_COPY(site->hide, hide);
 	if (useskip)
 		site->use_lists = atoi(useskip);
 	if (last_check) {
@@ -251,6 +269,43 @@ void conf_site(char **keys, char **values, int items,void *optarg)
 
 
     site->num_files = 0;
+}
+
+//TIMESTAMP|NAME=foo|LAST_CHECK=123123123
+void conf_timestamp(char **keys, char **values, int items,void *optarg)
+{
+	char *name, *last_check;
+	site_t *site = NULL;
+    int i;
+
+	name       = parser_findkey(keys, values, items, "NAME");
+	last_check = parser_findkey(keys, values, items, "LAST_CHECK");
+
+	if (!name) {
+		printf("TIMESTAMP Entry in conf without NAME= field\n");
+		return;
+	}
+
+    for (i = 0; i < num_sites; i++) {
+        if (sites[i] && !mystrccmp(name, sites[i]->name)) {
+            site = sites[i];
+            break;
+        }
+    }
+
+    if (!site) {
+        printf("Unable to find site '%s' used in TIMESTAMP\n", name);
+        return;
+    }
+
+	if (last_check) {
+		site->last_check = strtoul(last_check, NULL, 10);
+		site->last_check -= default_age;
+	} else {
+		site->last_check = lion_global_time;
+		site->last_check -= default_age;
+	}
+
 }
 
 
@@ -268,24 +323,24 @@ void conf_autoq(char **keys, char **values, int items,void *optarg)
 	incskip    = parser_findkey(keys, values, items, "INCSKIP");
 	requeue    = parser_findkey(keys, values, items, "REQUEUE");
 
-	if (!passnum || !from || !to || !accept) {
-		printf("AUTOQ Entry in conf without PASSNUM, FROM, TO or ACCEPT fields.\n");
+	if (!passnum || !from || !to) {
+		printf("AUTOQ Entry in conf without PASSNUM, FROM, TO fields.\n");
 		return;
 	}
-
-	if (optarg) {
-		// Saving
-		lion_printf(optarg, "AUTOQ|PASSNUM=%s|FROM=%s|TO=%s|ACCEPT=%s",
-					passnum, from, to, accept);
-		if (reject)  lion_printf(optarg, "|REJECT=%s", reject);
-		if (incskip) lion_printf(optarg, "|INCSKIP");
-		if (requeue) lion_printf(optarg, "|REQUEUE");
-		lion_printf(optarg, "\r\n");
-		return;
-	}
-
 
 	autoq_add(passnum, from, to, accept, reject, incskip, requeue);
+
+}
+
+//CONTINUED|ACCEPT=p1/p2/...|REJECT=p1/p2/...
+void conf_continued(char **keys, char **values, int items,void *optarg)
+{
+	char *accept, *reject;
+
+	accept     = parser_findkey(keys, values, items, "ACCEPT");
+	reject     = parser_findkey(keys, values, items, "REJECT");
+
+	autoq_add(NULL, NULL, NULL, accept, reject, NULL, NULL);
 
 }
 
@@ -364,23 +419,6 @@ void conf_trade(char **keys, char **values, int items,void *optarg)
 
 
 
-void conf_other(char **keys, char **values, int items,void *optarg)
-{
-	int i;
-
-	if (optarg) {
-		// last one is type
-		lion_printf(optarg, "%s", values[items-1]);
-		for (i = 0; i < items-1; i++)
-			lion_printf(optarg, "|%s=%s", keys[i], values[i]);
-		lion_printf(optarg, "\r\n");
-	}
-
-}
-
-
-
-
 
 
 int conf_file_handler(lion_t *handle, void *user_data,
@@ -399,7 +437,7 @@ int conf_file_handler(lion_t *handle, void *user_data,
 		break;
 
 	case LION_INPUT:
-		//debugf("settings: read '%s'\n", line);
+		//printf("settings: read '%s'\n", line);
 
 		parser_command(conf_command_list, line, user_data);
 
@@ -417,12 +455,12 @@ int conf_file_handler(lion_t *handle, void *user_data,
 
 
 
-void conf_read(lion_t *save)
+void conf_read(void)
 {
 	lion_t *conf_file;
 
 	conf_file = lion_open(conf_file_name, O_RDONLY, 0600,
-						  LION_FLAG_NONE, save);
+						  LION_FLAG_NONE, NULL);
 
 	if (!conf_file) {
 		perror("open:");
@@ -438,7 +476,45 @@ void conf_read(lion_t *save)
 
 }
 
+void conf_time(char *timefile)
+{
+	lion_t *conf_file = NULL;
+    char *tmp, *r;
 
+    if (!timefile) {
+        tmp = misc_strjoin(conf_file_name, "timestamp");
+        if ((r = strrchr(tmp, '/'))) *r = '.';
+        conf_file = lion_open(tmp, O_RDONLY, 0600,
+                              LION_FLAG_NONE, NULL);
+        SAFE_FREE(tmp);
+    } else {
+        conf_file = lion_open(timefile, O_RDONLY, 0600,
+                              LION_FLAG_NONE, NULL);
+    }
 
+    // Not having a timestamp file is OK
+	if (!conf_file) {
+        return;
+	}
 
+	lion_set_handler(conf_file, conf_file_handler);
 
+	do_exit = 0;
+	while(!do_exit)
+		lion_poll(0,1);
+	do_exit = 0;
+
+}
+
+void conf_save(lion_t *savefile)
+{
+    int i;
+
+    for (i = 0; i < num_sites; i++) {
+        if (sites[i]) {
+            lion_printf(savefile, "TIMESTAMP|NAME=%s", sites[i]->name);
+            lion_printf(savefile, "|LAST_CHECK=%lu", sites[i]->last_check);
+            lion_printf(savefile, "\r\n");
+        }
+    }
+}

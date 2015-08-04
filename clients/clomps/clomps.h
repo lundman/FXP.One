@@ -14,6 +14,7 @@ struct fxpone_struct {
 	char *pass;
 	int ssl;
 	lion_t *handle;
+    char *timefile;
 };
 
 typedef struct fxpone_struct fxpone_t;

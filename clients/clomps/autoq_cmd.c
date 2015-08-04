@@ -258,7 +258,6 @@ void autoq_cmd_qc(char **keys, char **values, int items,void *optarg)
 	fxpone_t *fxpone = (fxpone_t *)optarg;
 	autoq_t *aq;
 	char *qid, *empty, *errors;
-	file_t **tmp;
     int i;
 
 	qid   = parser_findkey(keys, values, items, "QID");

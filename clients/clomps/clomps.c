@@ -40,7 +40,7 @@ fxpone_t *fxpone_newnode(void)
 	fxpone_t *result;
 
 	if (fxpone) {
-		debugf("error: currently we only support conencting to ONE FXP.One engine.\n");
+		debugf("error: currently we only support connecting to ONE FXP.One engine.\n");
 		return NULL;
 	}
 
@@ -72,6 +72,7 @@ void fxpone_freenode(fxpone_t *node)
 	SAFE_FREE(node->host);
 	SAFE_FREE(node->user);
 	SAFE_FREE(node->pass);
+	SAFE_FREE(node->timefile);
 
 	SAFE_FREE(node);
 }
@@ -154,12 +155,14 @@ int main(int argc, char **argv)
 		exit(0);
 	}
 
-	conf_read(NULL);
+	conf_read();
 
 	if (!fxpone) {
 		printf("No FXPONE entry in .conf file error.\n");
 		exit(1);
 	}
+
+	conf_time(fxpone->timefile);
 
 	if (!fxpone->user) {
 		printf("Username: ");
@@ -210,7 +213,7 @@ int main(int argc, char **argv)
 	}
 
     printf("Saving updated time-stamps...\n");
-    if (do_exit == 2) site_savecfg();
+    if (do_exit == 2) site_savecfg(fxpone->timefile);
 
 	printf("All done.\n");
 
@@ -225,16 +228,3 @@ int main(int argc, char **argv)
 
 	return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

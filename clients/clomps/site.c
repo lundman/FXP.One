@@ -436,6 +436,11 @@ void site_cmd_dirlist(char **keys, char **values, int items,void *optarg)
 
 			}
 
+
+            // Don't show entries in HIDE
+            if (sites[i]->hide && file_listmatch(sites[i]->hide, name)) return;
+
+
 			//			SAFE_COPY(sites[i]->name, name);
 			file = file_new();
 			if (!file) return;
@@ -452,8 +457,10 @@ void site_cmd_dirlist(char **keys, char **values, int items,void *optarg)
 			site->num_files++;
 
 			SAFE_COPY(file->name, name);
-			file->date = strtoul(date, NULL, 10);
-			file->size = strtoull(size, NULL, 10);
+            if (date)
+                file->date = strtoul(date, NULL, 10);
+            if (size)
+                file->size = strtoull(size, NULL, 10);
 			if (type && !mystrccmp("directory", type))
 				file->type = 1;
 
@@ -580,15 +587,16 @@ void sites_compare(void)
 
 	for (j = 0; j < num_new; j++) {
 
-		printf("%c |", new_files[j]->type ? 'd' : 'f');
+        printf("%c |", new_files[j]->type ? 'd' : 'f');
 
-		for(i = 0; i < num_sites; i++)
-			printf("%-5.5s|",
-				   status2str( site_status(sites[i], new_files[j]) ));
+        for(i = 0; i < num_sites; i++)
+            printf("%-5.5s|",
+                   status2str( site_status(sites[i], new_files[j]) ));
 
-		printf(" %s", new_files[j]->name);
+        printf(" %s", new_files[j]->name);
 
-		printf("\n");
+        printf("\n");
+
 	}
 
 	printf("\n\n");
@@ -596,7 +604,7 @@ void sites_compare(void)
 }
 
 
-void site_savecfg(void)
+void site_savecfg(char *timefile)
 {
 	int i;
 	lion_t *save_file = NULL;
@@ -618,27 +626,30 @@ void site_savecfg(void)
 	// Saving info
 
 	if (conf_do_save) {
-        char *tmpname;
+        char *tmpname, *r;
 
-        tmpname = strdup(TMP_TEMPLATE);
-        if (!mktemp(tmpname)) {
-            debugf("failed to create tmpfile name.\n");
-            return;
+        if (!timefile) {
+            tmpname = misc_strjoin(conf_file_name, "timestamp");
+            if ((r = strrchr(tmpname, '/'))) *r = '.';
+
+            printf("Attempting to save '%s'\n", tmpname);
+            save_file = lion_open(tmpname,
+                                  O_WRONLY|O_TRUNC|O_CREAT,
+                                  0600, LION_FLAG_NONE, NULL);
+            SAFE_FREE(tmpname);
+        } else {
+            printf("Attempting to save '%s'\n", timefile);
+            save_file = lion_open(timefile,
+                                  O_WRONLY|O_TRUNC|O_CREAT,
+                                  0600, LION_FLAG_NONE, NULL);
         }
 
-		save_file = lion_open(tmpname,
-							  O_WRONLY|O_TRUNC|O_CREAT,
-							  0600, LION_FLAG_NONE, NULL);
 		if (save_file) {
 			lion_disable_read(save_file);
 			debugf("saving conf...\n");
-			conf_read(save_file);
+			conf_save(save_file);
 			lion_close(save_file);
-
-			rename(tmpname, conf_file_name);
 		}
-
-        SAFE_FREE(tmpname);
 
 	}
 

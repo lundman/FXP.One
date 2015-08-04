@@ -80,7 +80,7 @@ static char cfg_tlsciphers[] =
 
 
 // Master TLS context. Threads need to be able to access this! Or should children call init again?
-//THREAD_SAFE 
+//THREAD_SAFE
 	static SSL_CTX *tls_ctx = NULL;
 
 // internal variables to remember which has been initialised
@@ -300,6 +300,8 @@ int tls_auth( connection_t *node )
 #ifdef SSL_OP_NO_COMPRESSION
     SSL_CTX_set_options(node->ctx, SSL_OP_NO_COMPRESSION);
 #endif
+
+	SSL_CTX_set_options(node->ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
 
 #ifdef DEBUG
 	printf("Setting fd %d\n", node->socket);
@@ -677,7 +679,7 @@ int tls_clauth( connection_t *node )
 #endif
 
 #ifdef DEBUG
-	printf("Setting fd %d\n", node->socket);
+	printf("Setting fd %d ciphers %s\n", node->socket, ssl_tlsciphers);
 #endif
 
 	if (SSL_set_fd(node->ctx, node->socket ) != 1)
