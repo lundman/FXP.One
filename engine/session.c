@@ -1268,6 +1268,15 @@ void session_state_process(session_t *session, int reply, char *line)
 		if (!mystrccmp("+SSCN", line)) session->features |= FEATURE_SSCN;
 		if (!mystrccmp("+PRET", line)) session->features |= FEATURE_PRET;
 
+		// If FEAT are disabled by setting FEAT_CCSN=NO in Site Manager
+		// we will remove the feature, for faulty sites.
+		if (str2yna(sites_find_extra(session->site, "FEAT_CCSN")) == YNA_NO) 
+		  session->features &= ~FEATURE_CCSN;
+		if (str2yna(sites_find_extra(session->site, "FEAT_SSCN")) == YNA_NO) 
+		  session->features &= ~FEATURE_SSCN;
+		if (str2yna(sites_find_extra(session->site, "FEAT_PRET")) == YNA_NO) 
+		  session->features &= ~FEATURE_PRET;
+
 		if (!strncasecmp("+XDUPE",line, 6)) {
 			session->features |= FEATURE_XDUPE;
 			if (strstr(line, "Enabled"))
