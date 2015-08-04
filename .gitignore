@@ -14,3 +14,9 @@
 modules.order
 Makefile
 Makefile.in
+*.in
+#
+# Top level generated files specific to this top level dir
+#
+/config.log
+/config.status
