@@ -104,7 +104,6 @@ function addTableRow(tableID,flag) {
        }
       cell.setAttribute("class",prefix+"td"+(i-1).toString());
    }
-   cleanUI();
 }
 function dirlistStatus(tableID,message){
    // assume table is empty!!!
@@ -286,6 +285,7 @@ function refreshTable(side){
            }
           }
     }
+   cleanUI();
 }
 Array.prototype.move = function (old_index, new_index) {
     while (old_index < 0) {
