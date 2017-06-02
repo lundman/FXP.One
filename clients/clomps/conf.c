@@ -350,7 +350,7 @@ void conf_continued(char **keys, char **values, int items,void *optarg)
 
 void conf_irc(char **keys, char **values, int items,void *optarg)
 {
-	char *server, *nick, *user, *port, *pass, *ssl, *channel;
+	char *server, *nick, *user, *port, *pass, *ssl, *channel, *fish, *invite;
     ircserver_t *ircserver = NULL;
 
     // Mandatory
@@ -366,12 +366,15 @@ void conf_irc(char **keys, char **values, int items,void *optarg)
 	port    = parser_findkey(keys, values, items, "PORT");
 	pass    = parser_findkey(keys, values, items, "PASS");
 	ssl     = parser_findkey(keys, values, items, "SSL");
+	fish    = parser_findkey(keys, values, items, "FISH");
+	invite  = parser_findkey(keys, values, items, "INVITE");
 
     // Pull out the channel defines.
     while((	channel  = parser_findkey_once(keys, values, items, "CHANNEL"))) {
 
         if (!ircserver) {
-            ircserver = irc_addserver(server, port, pass, nick, user, ssl);
+            ircserver = irc_addserver(server, port, pass, nick, user, ssl,
+				fish, invite);
         }
         if (ircserver) {
             irc_addchannel(ircserver, channel);

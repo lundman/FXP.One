@@ -21,7 +21,7 @@
 #include "irc.h"
 #include "autoq.h"
 
-#if HAVE_PCRE && CLOMPS_IRCc
+#if HAVE_PCRE && CLOMPS_IRC
 #include <pcre.h>
 #else
 #include "lfnmatch.h"
@@ -32,11 +32,18 @@
 #endif
 #endif
 
+#if CLOMPS_IRC
+#include <openssl/bio.h>
+#include <openssl/evp.h>
+#include <openssl/blowfish.h>
+#include "blowfish.c"
+#endif
+
 static ircserver_t *irc_servers = NULL;
 static trade_t     *irc_trades  = NULL;
 
 ircserver_t *irc_addserver(char *strserver, char *port, char *pass, char *nick,
-                           char *user, char *ssl)
+	char *user, char *ssl, char *fish, char *invite)
 {
     ircserver_t *server;
 
@@ -49,6 +56,8 @@ ircserver_t *irc_addserver(char *strserver, char *port, char *pass, char *nick,
     SAFE_COPY(server->pass,   pass);
     SAFE_COPY(server->nick,   nick);
     SAFE_COPY(server->user,   user);
+    SAFE_COPY(server->fish,   fish);
+    SAFE_COPY(server->invite, invite);
 
     if (ssl && *ssl) {
         if (!mystrccmp(ssl, "yes") ||
@@ -156,6 +165,8 @@ void irc_free(void)
         SAFE_FREE(server->pass);
         SAFE_FREE(server->nick);
         SAFE_FREE(server->user);
+        SAFE_FREE(server->fish);
+        SAFE_FREE(server->invite);
 
         for (channel = server->channels;
              channel;
@@ -194,6 +205,39 @@ void irc_free(void)
     }
 
 }
+
+
+
+
+#if CLOMPS_IRC
+
+char *irc_fish_decrypt(char *fish, char *input)
+{
+	int n;
+	char *in;
+	char *out = input;
+	int cbc = 0;
+
+	// Skip over "+OK " for input
+	in = &input[4];
+
+	// Check for "*" here for cbc version?
+	if (*in == '*') {
+		cbc=1;
+		in++;
+	}
+
+	n = decrypt_string(fish, in, out, strlen(in));
+
+	debugf("Decrypt said %d with '%s'\n", n, out);
+
+	return out;
+}
+
+
+#endif
+
+
 
 void irc_server_input(ircserver_t *server, char *line)
 {
@@ -248,7 +292,17 @@ void irc_server_input(ircserver_t *server, char *line)
                                  "JOIN %s\r\n",
                                  channel->channel)) return;
             }
-            break;
+
+			// If invite is set, we also ask to be invited.
+            for (channel = server->channels; channel; channel = channel->next) {
+                if (!lion_printf(server->handle,
+						"PRIVMSG %s invite %s\r\n",
+						server->invite,
+						channel->channel)) return;
+            }
+
+
+			break;
         case 433: // Nick in use!
             debugf("[irc] NICK collision\n");
             lion_disconnect(server->handle);
@@ -264,6 +318,21 @@ void irc_server_input(ircserver_t *server, char *line)
         return;
     }
 
+	// token 'INVITE' input 'test :#amiga!'
+	if (!mystrccmp("INVITE", token)) {
+		// If we get an invite, we ignore anything sent to us, and just
+		// try to join the channel conf specifies
+		debugf("[irc] received INVITE '%s' - joining channels\n",
+			ar);
+		for (channel = server->channels; channel; channel = channel->next) {
+			if (!lion_printf(server->handle,
+					"JOIN %s\r\n",
+					channel->channel)) return;
+		}
+		return;
+	}
+
+
     // "ar" here is "#debug :text from user"
     strchannel = misc_digtoken(&ar, ": ");
 
@@ -272,6 +341,13 @@ void irc_server_input(ircserver_t *server, char *line)
         // From channel, or from user?
         debugf("[irc] PRIVMSG: <%s:%s> '%s'\n", from, strchannel, ar);
 
+
+#if CLOMPS_IRC
+		// Is it a fish message to be decrypted?
+		if (!strncasecmp("+OK ", ar, 4) && server->fish) {
+			ar = irc_fish_decrypt(server->fish, ar);
+		}
+#endif
 
         // Look for trade matches
 
@@ -350,7 +426,6 @@ void irc_server_input(ircserver_t *server, char *line)
     }
 
 }
-
 
 
 int irc_server_handler(lion_t *handle, void *user_data,
@@ -508,7 +583,3 @@ void irc_add_trade(char *nick, char *match, char *srcsite, char *srcdir,
 
 
 }
-
-
-
-

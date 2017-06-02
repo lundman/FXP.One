@@ -24,6 +24,8 @@ struct ircserver_struct {
     char *nick;
     char *user;
     int   ssl;
+	char *fish;
+	char *invite;
 
     ircchannel_t *channels;
 
@@ -61,7 +63,7 @@ typedef struct trade_struct trade_t;
 
 
 ircserver_t *irc_addserver ( char *server, char *port, char *pass, char *nick,
-                             char *user, char *ssl );
+	char *user, char *ssl, char *fish, char *invite );
 void         irc_addchannel( ircserver_t *ircserver, char *channel );
 
 int          irc_init ( void );
