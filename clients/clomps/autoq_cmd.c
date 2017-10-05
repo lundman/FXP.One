@@ -193,7 +193,8 @@ void autoq_send_qadd(autoq_t *aq)
 		file = file_find(aq->src_site->files,
 						 aq->src_site->num_files,
 						 aq->files[i]->name);
-		current_dir = file ? file->current_dir : 0;
+		//current_dir = file ? file->current_dir : 0;
+		current_dir = file ? file->current_dir : aq->dst_site->current_dir;
 
 
 		if (!lion_printf(aq->fxpone->handle,

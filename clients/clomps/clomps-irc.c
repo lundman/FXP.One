@@ -235,6 +235,7 @@ void clomps_ircqueue(trade_t *trade, char *releasename,
     file_t **tmp, *new_file;
     autoq_t *aq;
     char *r;
+	int i;
 
     // Check that it matches Accept.
     if (!file_listmatch(trade->accept, releasename))
@@ -324,9 +325,25 @@ void clomps_ircqueue(trade_t *trade, char *releasename,
                    new_file->name);
 
     // Locate SRCDIR in src_site->dirs[] and set current_dir correctly
-    // ditto DST
+    // ditto DST - sometime in the future
     aq->src_site->current_dir = 0;
     aq->dst_site->current_dir = 0;
+
+	for (i = 0; i < src->num_dirs; i++) {
+		if (aq->src_site->dirs[ i ] && trade->srcdir &&
+			(!strcmp(aq->src_site->dirs[ i ], trade->srcdir))) {
+			aq->src_site->current_dir = i;
+			break;
+		}
+	}
+
+	for (i = 0; i < dst->num_dirs; i++) {
+		if (aq->dst_site->dirs[ i ] && trade->dstdir &&
+			(!strcmp(aq->dst_site->dirs[ i ], trade->dstdir))) {
+			aq->dst_site->current_dir = i;
+			break;
+		}
+	}
 
     debugf("[irc] calling autoq ... \n");
     autoq_start(aq);
