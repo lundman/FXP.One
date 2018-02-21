@@ -196,11 +196,16 @@ function copyList(side)
 function doCmdChange(side)
 {
     if (!connected) return;
+    // the command changed so clear the input box
+    document.getElementById(side+"cmdinput").value = '';
     var site = (side=="left")?lsite:rsite;
     var pd = document.getElementById(side+"cmd");
     var input = document.getElementById(side+"cmdinput");
     switch(pd.value) {
     case 'refresh':
+        if (filtercontent !== "") {
+           document.getElementById(side+"cmdinput").value = filtercontent; 
+        }
     case 'selectall':
     case 'clearall':
     case 'unlink':
@@ -209,6 +214,13 @@ function doCmdChange(side)
         input.disabled = true;
         break;
     case 'filter':
+        input.disabled = false;
+        if (filtercontent === "") {
+            input.value = filtercontent; 
+            document.getElementById(side+"cmdinput").value = filtercontent;
+            break;
+        }
+        document.getElementById(side+"cmdinput").value = filtercontent;
     case 'site':
     case 'mkdir':
     case 'rename':
@@ -481,12 +493,16 @@ function doCommand(side)
     switch(pd.value) {
     case 'refresh':
         WriteLog("Refreshing directory");
-        site.filter = null;
         do_DIRLIST(site.session);
         break;
     case 'filter':
         WriteLog("Refreshing directory");
-        site.filter = input.value;
+        // use filtercontent to keep search value
+        filtercontent = document.getElementById(side+"cmdinput").value;
+        if (filtercontent === "") {
+            filtercontent = document.getElementById(side+"cmdinput").value;
+        }
+        site.filter = filtercontent;
         do_DIRLIST(site.session);
         break;
     case 'selectall':
