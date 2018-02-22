@@ -25,6 +25,8 @@
    var eventqueue = [];
    var usequeue = true; var queuebatch = 50;
    var filtercontent = "";
+   // needed for enter event
+   var side;
 
    function init() {
      output = document.getElementById("output");
@@ -73,6 +75,7 @@
       }
    }
    window.addEventListener("load", init, false);
+   window.addEventListener("keyup", doEnterKey);
    window.onresize = cleanUI
   </script>
 <link rel="StyleSheet" href="css/main.css" title="main" type="text/css"/>
