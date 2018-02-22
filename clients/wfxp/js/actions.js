@@ -201,6 +201,12 @@ function doCmdChange(side)
     var site = (side=="left")?lsite:rsite;
     var pd = document.getElementById(side+"cmd");
     var input = document.getElementById(side+"cmdinput");
+    input.addEventListener("keyup", function(event) {
+        event.preventDefault();
+        if (event.keyCode === 13) {
+            document.getElementById(side+"command").click();
+        }
+    });
     switch(pd.value) {
     case 'refresh':
         if (filtercontent !== "") {
