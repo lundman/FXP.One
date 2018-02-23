@@ -201,10 +201,11 @@ function doCmdChange(side)
     var site = (side=="left")?lsite:rsite;
     var pd = document.getElementById(side+"cmd");
     var input = document.getElementById(side+"cmdinput");
+    var currentfilter = side+"filtercontent";
     switch(pd.value) {
     case 'refresh':
-        if (filtercontent !== "") {
-           document.getElementById(side+"cmdinput").value = filtercontent; 
+        if (window[currentfilter] !== "") {
+           document.getElementById(side+"cmdinput").value = window[currentfilter]; 
         }
     case 'selectall':
     case 'clearall':
@@ -215,12 +216,12 @@ function doCmdChange(side)
         break;
     case 'filter':
         input.disabled = false;
-        if (filtercontent === "") {
-            input.value = filtercontent; 
-            document.getElementById(side+"cmdinput").value = filtercontent;
+        if (window[currentfilter] === "") {
+            input.value = window[currentfilter]; 
+            document.getElementById(side+"cmdinput").value = window[currentfilter];
             break;
         }
-        document.getElementById(side+"cmdinput").value = filtercontent;
+        document.getElementById(side+"cmdinput").value = window[currentfilter];
     case 'site':
     case 'mkdir':
     case 'rename':
@@ -490,6 +491,7 @@ function doCommand(side)
     // if (site.session == -1) return;
     var pd = document.getElementById(side+"cmd");
     var input = document.getElementById(side+"cmdinput");
+    var currentfilter = side+"filtercontent";
     switch(pd.value) {
     case 'refresh':
         WriteLog("Refreshing directory");
@@ -497,12 +499,12 @@ function doCommand(side)
         break;
     case 'filter':
         WriteLog("Refreshing directory");
-        // use filtercontent to keep search value
-        filtercontent = document.getElementById(side+"cmdinput").value;
-        if (filtercontent === "") {
-            filtercontent = document.getElementById(side+"cmdinput").value;
+        // use window[currentfilter] to keep search value
+        window[currentfilter] = document.getElementById(side+"cmdinput").value;
+        if (window[currentfilter] === "") {
+            window[currentfilter] = document.getElementById(side+"cmdinput").value;
         }
-        site.filter = filtercontent;
+        site.filter = window[currentfilter];
         do_DIRLIST(site.session);
         break;
     case 'selectall':
@@ -913,13 +915,14 @@ function do_QMView()
 
 function doEnterKey()
 {
+    var focusbaboon = document.activeElement.id;
     event.preventDefault();
     if (event.keyCode === 13) {
-        switch(side) {
-            case 'left':
+        switch(focusbaboon) {
+            case 'leftcmdinput':
                 document.getElementById("leftcommand").click();
                 break;
-            case 'right':
+            case 'rightcmdinput':
                 document.getElementById("rightcommand").click();
                 break;
         }
