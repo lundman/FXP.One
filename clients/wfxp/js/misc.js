@@ -222,8 +222,12 @@ function changeSort(side,stype){
    var nsort = "";
    if(csort[0] == stype){  // toggle asc/dsc
      nsort = stype+((csort[1] == "ASC")?"-DSC":"-ASC");
-   }else{  // default descending on new click
-     nsort = stype+"-DSC";
+   }else{  // default descending for date, ascending for name
+     if (stype === "NAME"){
+         nsort = stype+"-ASC";
+     }else{
+         nsort = stype+"-DSC";
+     }
    }
    localStorage[side+"sort"] = nsort;
    refreshTable(side);
