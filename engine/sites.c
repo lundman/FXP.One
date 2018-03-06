@@ -551,7 +551,6 @@ int sites_parsekeys(char **keys, char **values, int items, sites_t *node)
 									 sizeof(char *) * xitems);
 			if (!tmp) return 401; // Out of memory
 			node->values = tmp;
-
 		}
 
 		//node->items = xitems;
@@ -585,8 +584,22 @@ int sites_parsekeys(char **keys, char **values, int items, sites_t *node)
 					// Did we not find an empty slot?
 					if (empty == -1) {
 						empty = node->items;
+
+						// Add more space.
 						node->items++;
+						char **tmp;
+
+						tmp  = (char **) realloc(node->keys,
+							sizeof(char *) * node->items);
+						if (!tmp) return 401; // Out of memory
+						node->keys = tmp;
+
+						tmp  = (char **) realloc(node->values,
+							sizeof(char *) * node->items);
+						if (!tmp) return 401; // Out of memory
+						node->values = tmp;
 					}
+					// Ok, there is space.
 
 					SAFE_DUPE(node->keys[empty],   keys[i]);
 					SAFE_DUPE(node->values[empty], values[i]);
