@@ -66,6 +66,10 @@ function handle_SITELIST(data){
             rsites.remove(0);
         }
         var smsites = document.getElementById("sm_sites");
+
+        // save current site for loading later (saved commands editing)
+        selectedSite = smsites.options[smsites.selectedIndex].value;
+
         while (smsites.length> 0) {
             smsites.remove(0);
         }
@@ -100,8 +104,17 @@ function handle_SITELIST(data){
             lsites.add(opt,null);
             rsites.add(opt.cloneNode(true),null);
             smsites.add(opt.cloneNode(true),null);
+
             if(localStorage.lastleftsite == key){lsites.selectedIndex = i;}
             if(localStorage.lastrightsite == key){rsites.selectedIndex = i;}
+        }
+
+        // we're working on this site, reload
+        for (var i=0; i<smsites.options.length; i++) {
+            if ( smsites.options[i].value == selectedSite ) {
+                smsites.selectedIndex = i;
+                break;
+            }
         }
         doSMSiteChange();
         return;
@@ -113,20 +126,81 @@ function handle_SESSIONNEW(data){
         queue.qid = -1;
         doQueueWipe();  // gui queue wipe
     }
-    if(lsite.siteid == data["SITEID"] && lsite.session == -1){lsite.session = data["SID"];}
-    else if(rsite.siteid == data["SITEID"] && rsite.session == -1){rsite.session = data["SID"];}
+    if(lsite.siteid == data["SITEID"] && lsite.session == -1) {
+        lsite.session = data["SID"];
+    }
+    else if(rsite.siteid == data["SITEID"] && rsite.session == -1) {
+        rsite.session = data["SID"];
+    }
     else{
         if(!debug) {WriteLog("Unknown sessionnew response!");}
     }
+    if (data["SID"] == lsite.session) {
+        var side="left";
+        var site = (side=="left")?lsite:rsite;
+        // clear the site log
+        document.getElementById("lwalloutput").value = '';
+        // update the name in the site log
+        document.getElementById("lloglabel").innerHTML = '<input type="image" align="right" class="ctrls" src="img/delete_item.png" title="Clear log" onclick="do_LogClear(\'left\');">';
+        document.getElementById("lloglabel").innerHTML += "[ " + sitelist[site.siteid]["NAME"] + " ] site log";
+    } else if (data["SID"] == rsite.session) {
+               var side="right";
+               var site = (side=="left")?lsite:rsite;
+               // clear the site log
+               document.getElementById("rwalloutput").value = '';
+               // update the name in the site log
+               document.getElementById("rloglabel").innerHTML = '<input type="image" align="right" class="ctrls" src="img/delete_item.png" title="Clear log" onclick="do_LogClear(\'right\');">';
+               document.getElementById("rloglabel").innerHTML += "[ " + sitelist[site.siteid]["NAME"] + " ] site log";
+    }
 }
 
-
+function handle_LOG(data) {
+    // try to print without being too verbose
+    var side = "";
+    if (data["SID"] == lsite.session){side="left";}
+    else if (data["SID"] == rsite.session){side="right";}
+    var text = decode(data["MSG"]);
+    // literal text null showing up
+    if (text === '(null)') {
+        text = " ";
+        WriteLog(text);
+        WriteLargeLog(side,text);
+        return;
+    }
+    // keep: lines with XXX-
+    var droppattern = new RegExp(/^\d{3}[^-]/);
+    var drop = droppattern.test(text);
+    if (drop) {
+        return;
+    }
+    // strip the numbers are ugly
+    var pattern = new RegExp(/^\d{3}-/);
+    var cuttem = pattern.test(text);
+    if (cuttem) {
+       var newtext = text.slice(4);
+       WriteLog(newtext);
+       WriteLargeLog(side,newtext);
+    }else{
+        WriteLog(text);
+        WriteLargeLog(side,text);
+    }
+}
 
 function handle_CONNECT(data){
     var side = "";
-    if(queue.qid == -1&&lsite.siteid != -1&&rsite.siteid != -1){ do_QUEUENEW();}// new queue
-    if(data["SID"] == lsite.session){side="left"; localStorage.lastleftsite=lsite.siteid;}
-    else if(data["SID"] == rsite.session) {side="right"; localStorage.lastrightsite=rsite.siteid;}
+    if (queue.qid == -1&&lsite.siteid != -1&&rsite.siteid != -1) { 
+        do_QUEUENEW();
+    }// new queue
+    if (data["SID"] == lsite.session) {
+        side="left";
+        var site = (side=="left")?lsite:rsite;
+        localStorage.lastleftsite=lsite.siteid;
+    }
+    else if (data["SID"] == rsite.session) {
+             side="right";
+             var site = (side=="left")?lsite:rsite;
+             localStorage.lastrightsite=rsite.siteid;
+    }
     else{
         WriteLog("CONNECT msg received for unknown SID: "+data["SID"]);
         return;
@@ -150,8 +224,14 @@ function handle_DISCONNECT(data){
         return;
     }
     var site = (side=="left")?lsite:rsite;
+
+    // write out rdirs
+    svCmdReadWrite("write","RDIRS",site.siteid);
+
     if(!debug) {WriteLog("Site " + sitelist[site.siteid]["NAME"] + " disconnected. ("+data["MSG"]+")");}
     site.session = -1;
+    // reset siteid
+    site.siteid = -1; 
     clearTable(side);
     if (queue.qid > -1)
         do_QUEUEFREE();
@@ -196,9 +276,12 @@ function handle_PWD(data){
     }
 
     // Update the PATH input
-    if (data["CODE"] == 0)
+    if (data["CODE"] == 0) {
         pd.value = decode(data["PATH"]);
-
+    }
+    if (pd.value.indexOf('/') > -1) {
+        rememberCWD(side,pd.value);
+    }
     do_DIRLIST(site.session);
 }
 
@@ -227,6 +310,7 @@ function handle_DIRLIST(data){
 
 function handle_QUEUENEW(data)
 { // QUEUENEW|CODE=0|QID=1|NORTH_SID=1|SOUTH_SID=2|MSG=Queue created
+    queuenewlock = 0;
     if ((data["NORTH_SID"]==lsite.session) &&
         (data["SOUTH_SID"]==rsite.session)) {
         queue.qid = data["QID"];

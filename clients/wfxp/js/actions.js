@@ -29,7 +29,7 @@ function doAuth() {
         alert("\nYou are still using the default password.\nPlease change it as soon as possible.");
     socket.send("AUTH|USER="+myuser+"|PASS="+mypass+"\n")
     document.getElementById("connectstatus").innerHTML = "Authenticating...";
-    WriteLog("Authing...");
+    WriteLog("Authenticating...");
 }
  function doSend() {
     var mbox = document.getElementById("send");
@@ -196,17 +196,16 @@ function copyList(side)
 function doCmdChange(side)
 {
     if (!connected) return;
-    // the command changed so clear the input box
-    document.getElementById(side+"cmdinput").value = '';
     var site = (side=="left")?lsite:rsite;
     var pd = document.getElementById(side+"cmd");
     var input = document.getElementById(side+"cmdinput");
-    var currentfilter = side+"filtercontent";
+    // check for a saved command
+    var savedcommand = pd.options[pd.selectedIndex].getAttribute('savedcmd');
+    if (savedcommand) {
+        document.getElementById(side+"cmdinput").value = savedcommand;
+    }
     switch(pd.value) {
     case 'refresh':
-        if (window[currentfilter] !== "") {
-           document.getElementById(side+"cmdinput").value = window[currentfilter]; 
-        }
     case 'selectall':
     case 'clearall':
     case 'unlink':
@@ -215,13 +214,6 @@ function doCmdChange(side)
         input.disabled = true;
         break;
     case 'filter':
-        input.disabled = false;
-        if (window[currentfilter] === "") {
-            input.value = window[currentfilter]; 
-            document.getElementById(side+"cmdinput").value = window[currentfilter];
-            break;
-        }
-        document.getElementById(side+"cmdinput").value = window[currentfilter];
     case 'site':
     case 'mkdir':
     case 'rename':
@@ -243,6 +235,7 @@ function defaultSite()
     site["USER"]         = "";
     site["PASS"]         = "";
     site["STARTDIR"]     = "";
+    site["SVTYPE"]        = "";
     site["PASSIVE"]      = "2";
     site["FXP_PASSIVE"]  = "2";
     site["CONTROL_TLS"]  = "2";
@@ -259,6 +252,8 @@ function defaultSite()
     site["DSKIPLIST"]    = "";
     site["FSKIPEMPTY"]   = "2";
     site["DSKIPEMPTY"]   = "2";
+    site["SVDCMDS"]      = "";
+    site["RDIRS"]      = "";
 
     return site;
 }
@@ -278,6 +273,7 @@ function getExtraPairs(site)
         case 'USER':
         case 'PASS':
         case 'STARTDIR':
+        case 'SVTYPE':
         case 'PASSIVE':
         case 'FXP_PASSIVE':
         case 'CONTROL_TLS':
@@ -294,6 +290,8 @@ function getExtraPairs(site)
         case 'DSKIPLIST':
         case 'FSKIPEMPTY':
         case 'DSKIPEMPTY':
+        case 'SVDCMDS':
+        case 'RDIRS':
             break;
         default:
             str += "|"+key+"="+site[key];
@@ -302,9 +300,20 @@ function getExtraPairs(site)
     return str;
 }
 
+function doSMSiteUpdate()
+{
+}
 
 function doSMSiteChange()
 {
+    // flush saved commands data and menu
+    encodedsitecommands = '';
+    sitesavedcommands.length = 0;
+    while (saved_commands.childNodes.length > 0) {
+        saved_commands.removeChild(saved_commands.lastChild);
+    }
+    document.getElementById("sv_newcmdargs").value = '';
+
     var smsites = document.getElementById("sm_sites");
     var s = smsites.value; // SITEID
     if (s == '-1') {
@@ -323,6 +332,7 @@ function doSMSiteChange()
     document.getElementById("sm_user").value = site["USER"];
     document.getElementById("sm_pass").value = site["PASS"];
     document.getElementById("sm_startdir").value = "STARTDIR" in site ? site["STARTDIR"] : "";
+    document.getElementById("sm_svtype").value = site["SVTYPE"];
     document.getElementById("sm_pasv").value = site["PASSIVE"];
     document.getElementById("sm_fxpp").value = site["FXP_PASSIVE"];
     document.getElementById("sm_cssl").value = site["CONTROL_TLS"];
@@ -349,7 +359,8 @@ function doSMSiteChange()
     } else {
         document.getElementById("sm_local").checked = false;
     }
-
+    var svtype = document.getElementById("sm_svtype").value;
+    doLoadSiteCommands(svtype);
 }
 
 function smLocalChange()
@@ -413,6 +424,9 @@ function smSaveSite()
     if ((val = document.getElementById("sm_pass").value) !==
         (("PASS" in site) ? site["PASS"] : plain["PASS"]))
         save += "|PASS="+val;
+    if ((val = document.getElementById("sm_svtype").value) !==
+        (("SVTYPE" in site) ? site["SVTYPE"] : plain["SVTYPE"]))
+        save += "|SVTYPE="+val;
     if ((val = document.getElementById("sm_startdir").value) !==
         (("STARTDIR" in site) ? site["STARTDIR"] : plain["STARTDIR"]))
         save += "|STARTDIR="+val;
@@ -464,7 +478,12 @@ function smSaveSite()
     if ((val = document.getElementById("sm_dempty").value) !==
         (("DSKIPEMPTY" in site) ? site["DSKIPEMPTY"] : plain["DSKIPEMPTY"]))
         save += "|DSKIPEMPTY="+val;
-
+    if ((val = encodedsitecommands) !==
+        (("SVDCMDS" in site) ? site["SVDCMDS"] : plain["SVDCMDS"]))
+        save += "|SVDCMDS="+val;
+    if ((val = encodedrecentdirs) !==
+        (("RDIRS" in site) ? site["RDIRS"] : plain["RDIRS"]))
+        save += "|RDIRS="+val;
     if ((val = document.getElementById("sm_extra").value) !==
         getExtraPairs(site))
         save += "|"+val;
@@ -491,20 +510,15 @@ function doCommand(side)
     // if (site.session == -1) return;
     var pd = document.getElementById(side+"cmd");
     var input = document.getElementById(side+"cmdinput");
-    var currentfilter = side+"filtercontent";
     switch(pd.value) {
     case 'refresh':
         WriteLog("Refreshing directory");
+        site.filter = null;
         do_DIRLIST(site.session);
         break;
     case 'filter':
         WriteLog("Refreshing directory");
-        // use window[currentfilter] to keep search value
-        window[currentfilter] = document.getElementById(side+"cmdinput").value;
-        if (window[currentfilter] === "") {
-            window[currentfilter] = document.getElementById(side+"cmdinput").value;
-        }
-        site.filter = window[currentfilter];
+        site.filter = input.value;
         do_DIRLIST(site.session);
         break;
     case 'selectall':
@@ -554,10 +568,52 @@ function do_SESSIONNEW(side){
       }else{
          var pd = document.getElementById(side.substr(0,1)+"slist");
          site.siteid = pd.options[pd.selectedIndex].value;
-         socket.send("SESSIONNEW|SITEID="+site.siteid+"\n");
+
+         //put the textbox back
+         if (side == "left") {
+             var sd = "l";
+         }else{ var sd = "r"; }
+         var select = document.getElementById(sd+"dirselect");
+         select.style.display = 'none';
+         var textbox = document.getElementById(sd+"path");
+         textbox.style.display = 'inline';
+         textbox.value = '';
+
+         // wipe filter from last session
+         site.filter = null;
+
+         // new session means new side+siderecentdirs
+         eval(side+"siderecentdirs").length=0;
+
+         // get recent dirs, sets siterecentdirs
+         svCmdReadWrite("read","RDIRS",site.siteid);
+
+         // populate recent directories
+         if (siterecentdirs.length > 1) {
+             if (side == "left") {
+                 leftsiderecentdirs = siterecentdirs.slice();
+             }else if (side == "right") {
+                 rightsiderecentdirs = siterecentdirs.slice();
+             }
+             // flush for next use
+             siterecentdirs.length=0;
+         }
+
+         // populate top menu saved commands when we (try to) connect
+         // read from object into tmp so sitesavedcmds doesn't break
+         var tmptopcmdmenu = svCmdReadWrite("read","SVDCMDS",site.siteid);
+         if (tmptopcmdmenu.length > 1) {
+             var tmptopmenu = svCmdReadWrite("read","SVDCMDS",site.siteid).slice();
+             for (var i = 0; i < tmptopmenu.length; i++) {
+                 svCmdTopMenu(tmptopmenu,side);
+             }
+         }
+
+         // LOG=1 needed for LOG command
+         socket.send("SESSIONNEW|SITEID="+site.siteid+"|LOG=1\n");
          dirlistStatus(side,"**CONNECTING**");
       }
-   }else{
+    }else{
       WriteLog("Not connected!");
    }
 }
@@ -565,12 +621,27 @@ function do_SESSIONFREE(side)
 {
     if(connected){
         var site = (side=="left")?lsite:rsite;
-        if(site.siteid == -1){ // should this not be "session" (SID) ?
-            WriteLog("Site "+sitelist[site.siteid]["NAME"]+" not connected!");
+        // if site.session isn't defined we're not connected at all
+        if(site.session == -1) {
+            WriteLog("Not connected to a site!");
         }else{
             if (queue.qid != -1){
                 do_QUEUEFREE(queue.qid);
             }
+
+            //put the textbox back
+            if (side == "left") {
+                var sd = "l";
+            }else{ var sd = "r"; }
+            var select = document.getElementById(sd+"dirselect");
+            select.style.display = 'none';
+            var textbox = document.getElementById(sd+"path");
+            textbox.style.display = 'inline';
+            textbox.value = '';
+            //clear the site cmd box
+            var cmdbox = document.getElementById(side+"cmdinput");
+            cmdbox.value = '';
+
             socket.send("SESSIONFREE|SID="+site.session+"\n");
         }
     }else{
@@ -579,7 +650,10 @@ function do_SESSIONFREE(side)
 }
 function do_QUEUENEW(){
    if(connected){
-      socket.send("QUEUENEW|NORTH_SID="+lsite.session+"|SOUTH_SID="+rsite.session+"\n");
+      if (queuenewlock == 0) {
+          queuenewlock = 1;
+          socket.send("QUEUENEW|NORTH_SID="+lsite.session+"|SOUTH_SID="+rsite.session+"\n");
+      }else{ return; }
    }
 }
 function do_QUEUEFREE(qid){
@@ -589,6 +663,11 @@ function do_QUEUEFREE(qid){
 }
 function do_CWD(sid,dir){
     if(connected){
+        if(sid == lsite.session){
+            side="left";
+        }else if(sid == rsite.session){
+            side="right";
+        }
         socket.send("CWD|SID="+sid+"|PATH="+dir+"\n");
     }
 }
@@ -608,6 +687,17 @@ function do_DIRLIST(sid){
 
 function do_GO() {
     if (queue.qid == -1) return;
+
+    // session is going to drop, save rdirs on both sides
+    var sitel = lsite;
+    if(sitel.session > 0) {
+        svCmdReadWrite("write","RDIRS",sitel.siteid);
+    }
+    var siter = rsite;
+    if(siter.session > 0) {
+        svCmdReadWrite("write","RDIRS",siter.siteid);
+    }
+
     socket.send("GO|SUBSCRIBE|QID="+queue.qid+"\n");
 }
 
@@ -928,3 +1018,448 @@ function doEnterKey()
         }
     }
 }  
+
+function do_LogClear(clickside)
+{
+    if (clickside == "left") {
+        document.getElementById("lwalloutput").value = ''; 
+    } else if (clickside == "right") {
+        document.getElementById("rwalloutput").value = ''; 
+    }
+}
+
+// all the code for the saved commands editor
+function doLoadSiteCommands(svtype)
+{
+    // reset warning messages
+    document.getElementById("savedcmdeditoroutput").innerHTML = '';
+
+    // Standard commands from site cmd menu
+    var specialcmds = "";
+    // only commands that take arguments
+    var standardcmds = ["filter","site cmd","new dir","delete","rename"];
+
+    // FXPOne site commands via 'help'
+    var fxponecmds = ["-FXPOne Commands-","adduser","chgrp","chown","colour","deluser","dupe","extra","give","groupadd",
+    "groupdel","groupinfo","grouplist","groupuser","gtagline","gtopdn","gtopup","help","incompletes",
+    "kick","move","msg","new","nuke","passwd","pre","races","rehash","renuser","reqfilled","request",
+    "search","section","setcred","setflags","setip","setlimit","setpass","setratio","tagline","tcpstat",
+    "topdn","topup","unnuke","user","wall","who"];
+
+    // add the other more inferior ftp server types here later
+    if (svtype == "fxpone") {
+        specialcmds = fxponecmds;
+    }
+
+    // clear menu first
+    while (sv_newcmd.childNodes.length > 0) {
+        sv_newcmd.removeChild(sv_newcmd.lastChild);
+    }
+    // add defaults
+    for (var i = 0; i < standardcmds.length; i++) {
+        var option = document.createElement("option");
+        option.value = standardcmds[i];
+        option.text = standardcmds[i];
+        if (option.value == "site cmd") {
+            option.value = "site";
+        } else if (option.text == "site cmd") {
+            option.text = "site";
+        }
+        sv_newcmd.appendChild(option);
+    }
+    // now the 'specials"
+    for (var i = 0; i < specialcmds.length; i++) {
+        var option = document.createElement("option");
+        option.value = "site "+specialcmds[i];
+        option.text = specialcmds[i];
+        if (option.value == "site -FXPOne Commands-") {
+            option.disabled = true;
+            option.text = "-FXPOne Commands-";
+        }
+    sv_newcmd.appendChild(option);
+    }
+
+    // check SVDCMDS value for commands
+    var savedCmdsData = site["SVDCMDS"];
+    if (savedCmdsData && savedCmdsData.length > 0 ) {
+        sitesavedcommands = svCmdReadWrite("read","SVDCMDS",site["SITEID"]).slice();
+        svRedrawCmdGUI();
+    }
+}
+
+function svNewCommand()
+{
+    // pick a site first, friend
+    document.getElementById("savedcmdeditoroutput").innerHTML = '';
+    if (document.getElementById("sm_sites").value == "-1") {
+        document.getElementById("savedcmdeditoroutput").innerHTML = "Please create or select a site first.";
+        return;
+    }
+    document.getElementById("savedcmdeditoroutput").innerHTML = '';
+    var newWriteCmd;
+    var newCommand = document.getElementById("sv_newcmd").value;
+    var newArgs = document.getElementById("sv_newcmdargs").value.trim();
+    //check for empty values
+    if (!newCommand) {
+       document.getElementById("savedcmdeditoroutput").innerHTML = "Missing command. Please try again.";
+       return;
+    }
+    // empty arguments
+    if (!newArgs.replace(/\s/g, '').length) {
+        newWriteCmd = newCommand;
+    }else{
+        newWriteCmd = newCommand.concat(" ",newArgs);
+    }
+    // check for existing command
+    var cmdMatch = sitesavedcommands.indexOf(newWriteCmd);
+    if (cmdMatch != -1) {
+        document.getElementById("savedcmdeditoroutput").innerHTML = "Command already exists. Please try again.";
+        return;
+    }else{
+        // new command, push to sitesavedcommands array
+        sitesavedcommands.push(newWriteCmd);
+
+        // Write out to the site data, redraw gui
+        svCmdReadWrite("write","SVDCMDS",site["SITEID"]);
+        svRedrawCmdGUI();
+    }
+}
+
+// future use
+function svCmdArrayUpdate(sitesavedcommands)
+{
+    // try to avoid wiping it all
+    if (sitesavedcommands.length < 1) {
+       WriteLog("Fatal error with saved commands data; aborting.");
+       return;
+    }
+}
+
+function svCmdTopMenu(tmptopmenu,side)
+{
+   var cmdmenu = document.getElementById(side+"cmd");
+   var site = (side=="left")?lsite:rsite;
+   if (tmptopmenu) {
+      // local variable so editing doesn't break the menu
+      var menusavedcommands = tmptopmenu.slice();
+      // clear the menu
+      while (cmdmenu.childNodes.length > 0) {
+        cmdmenu.removeChild(cmdmenu.lastChild);
+      }
+      // repopulate with default + saved
+      var staticcmds = ["refresh|refresh","filter|filter",
+         "selectall|select all","clearall|clear all","site|site cmd",
+         "mkdir|new dir","unlink|delete","rename|rename","compare|compare",
+         "copylist|copy list"];
+      for (var i = 0; i < staticcmds.length; i++){
+         var option = document.createElement("option");
+         option.value = staticcmds[i].split("|")[0];
+         if (option.value == "site") {
+             option.selected = true;
+         }
+         option.text = staticcmds[i].split("|")[1];
+         cmdmenu.appendChild(option);
+      }
+      // add saved commands
+      // site name first as divider
+      var option = document.createElement("option");
+      option.value = "separator"
+      option.text = "-"+sitelist[site.siteid]["NAME"]+"-";
+      option.disabled = true;
+      cmdmenu.appendChild(option);
+      // saved commands, use custom savecmd tag for args in doCommand
+      for (var i = 0; i < menusavedcommands.length; i++) {
+         var option = document.createElement("option");
+         option.value = menusavedcommands[i].split(" ")[0];
+         option.text = menusavedcommands[i];
+         var tmpcmd = menusavedcommands[i];
+         savedcmdstr = tmpcmd.substr(tmpcmd.indexOf(" ") + 1);
+         option.setAttribute('savedcmd',savedcmdstr);
+         option.text = menusavedcommands[i];
+         cmdmenu.appendChild(option);
+      }
+   }
+}
+
+function svCmdReadWrite(rwcommand,type,siteid)
+{
+    var site = sitelist[siteid];
+    var tmpsavedcmds;
+    var encodeddata = '';
+    var side;
+    if (siteid == lsite.siteid) {
+        side = "left";
+    }else if (siteid == rsite.siteid) {
+        side = "right";
+    }
+
+    if (rwcommand == "read") {
+        encodeddata = site[type];
+        if(!encodeddata || encodeddata == '') {
+            // WriteLog("Cannot read " + type + " from " + sitelist[siteid]["NAME"]); 
+            return -1;
+        }
+        if (type == "SVDCMDS") {
+            tmpsavedcmds = b64wrap(encodeddata,"decode");
+            if(tmpsavedcmds) {
+                tmpsitesavedcommands = tmpsavedcmds.split(",");
+                return tmpsitesavedcommands;
+            }else{ return -1; }
+        }else if (type == "RDIRS") {
+            tmpsavedcmds = b64wrap(encodeddata,"decode");
+            if(tmpsavedcmds) {
+                siterecentdirs = tmpsavedcmds.split(",");
+            }else{ return -1; }
+        }
+    } else if (rwcommand == "write") {
+        if (type == "SVDCMDS") {
+            encodedsitecommands = b64wrap(sitesavedcommands,"encode");
+            if(encodedsitecommands) {
+                save = "SITEMOD|SITEID=" + siteid + "|SVDCMDS=" + encodedsitecommands;
+                socket.send(save+"\n");
+                // update the site{} data
+                sitelist[siteid]["SVDCMDS"] = encodedsitecommands;
+                // Also update top level menus if site matches
+                if (side) {
+                    svCmdTopMenu(sitesavedcommands,side);
+                }
+            }
+        }
+        if (type == "RDIRS") {
+            tmpsavedcmds = eval(side+"siderecentdirs").toString();
+            var tmpencodedrecentdirs = b64wrap(tmpsavedcmds,"encode");
+            save = "SITEMOD|SITEID=" + siteid + "|RDIRS=" + tmpencodedrecentdirs;
+            // WriteLog("Saved rdir site data: " + tmpsavedcmds);
+            socket.send(save+"\n");
+        }
+    }
+}
+
+function svUpdateCommand(updateid)
+{
+    sitesavedcommands[updateid] = document.getElementById("sv_args"+updateid).value;
+    svCmdReadWrite("write","SVDCMDS",site["SITEID"]);
+}
+
+function svDeleteCommand(delid)
+{
+    sitesavedcommands.splice(delid, 1);
+    svRedrawCmdGUI();
+    svCmdReadWrite("write","SVDCMDS",site["SITEID"]);
+}
+
+function svMoveCommand(arrayid,direction)
+{
+    switch(direction) {
+    case 'up':
+        if (arrayid != 0) {
+            var ahead = +arrayid - 1;
+            var aheadval = document.getElementById("sv_args"+ahead).value;
+            sitesavedcommands[ahead] = document.getElementById("sv_args"+arrayid).value;
+            sitesavedcommands[arrayid] = aheadval;
+            svRedrawCmdGUI();
+            svCmdReadWrite("write","SVDCMDS",site["SITEID"]);
+        }
+        break;
+    case 'down':
+        if (arrayid != sitesavedcommands.length) {
+            var ahead = +arrayid + 1;
+            var aheadval = document.getElementById("sv_args"+ahead).value;
+            sitesavedcommands[ahead] = document.getElementById("sv_args"+arrayid).value;
+            sitesavedcommands[arrayid] = aheadval;
+            svRedrawCmdGUI();
+            svCmdReadWrite("write","SVDCMDS",site["SITEID"]);
+        }
+        break;
+    case 'top':
+        sitesavedcommands.splice(arrayid,1);
+        sitesavedcommands.unshift(document.getElementById("sv_args"+arrayid).value);
+        svRedrawCmdGUI();
+        svCmdReadWrite("write","SVDCMDS",site["SITEID"]);
+        break;
+    case 'bottom':
+        sitesavedcommands.splice(arrayid,1);
+        sitesavedcommands.push(document.getElementById("sv_args"+arrayid).value);
+        svRedrawCmdGUI();
+        svCmdReadWrite("write","SVDCMDS",site["SITEID"]);
+        break;
+    default:
+        break;
+    }
+}
+
+function svRedrawCmdGUI()
+{
+    while (saved_commands.childNodes.length > 0) {
+        saved_commands.removeChild(saved_commands.lastChild);
+    }
+
+    for (var i = 0; i < sitesavedcommands.length; i++) {
+        var cmd = sitesavedcommands[i];
+        if( cmd == null) {
+            return;
+        }
+        svDrawCmdGUI(cmd,i);
+    }
+}
+
+function svDrawCmdGUI(command,arraynum)
+{
+    // div wrapper
+    var cmdwrapper = document.createElement("div");
+    // textbox
+    var cmdinput = document.createElement("input");
+    // images
+    var imgsave = document.createElement("input");
+    var imgup = document.createElement("input");
+    var imgdelete = document.createElement("input");
+    var imgdown = document.createElement("input");
+    var imgtop = document.createElement("input");
+    var imgbottom = document.createElement("input");
+
+    cmdwrapper.type = "div";
+    cmdwrapper.id = "cmdwrapper" + arraynum;
+    cmdwrapper.title = "Command wrapper" + arraynum;
+    document.getElementById("saved_commands").appendChild(cmdwrapper);
+
+    var cmdinput = document.createElement("input");
+    cmdinput.type = "text";
+    cmdinput.id = "sv_args" + arraynum;
+    cmdinput.title = "Command arguments" ;
+    cmdinput.value = command;
+    document.getElementById("cmdwrapper" + arraynum).appendChild(cmdinput);
+
+    // images save,delete,up,down,top,bottom
+    imgsave.type = 'image';
+    imgsave.className = 'ctrls';
+    imgsave.src = "img/save.gif";
+    imgsave.title = "Update saved command";
+    imgsave.id = arraynum;
+    imgsave.setAttribute('onclick', 'svUpdateCommand(this.id);');
+    document.getElementById("cmdwrapper" + arraynum).appendChild(imgsave);
+
+    imgdelete.type = "image";
+    imgdelete.className = "ctrls";
+    imgdelete.src = "img/delete_item.png";
+    imgdelete.title = "Delete saved command";
+    imgdelete.id = arraynum;
+    imgdelete.setAttribute('onclick', 'svDeleteCommand(this.id);');
+    document.getElementById("cmdwrapper" + arraynum).appendChild(imgdelete);
+
+    imgup.type = "image";
+    imgup.className = "ctrls";
+    imgup.src = "img/move-up.png";
+    imgup.title = "Move up";
+    imgup.id = arraynum;
+    imgup.setAttribute('onclick', 'svMoveCommand(this.id,"up");');
+    document.getElementById("cmdwrapper" + arraynum).appendChild(imgup);
+
+    imgdown.type = "image";
+    imgdown.className = "ctrls";
+    imgdown.src = "img/move-down.png";
+    imgdown.title = "Move down";
+    imgdown.id = arraynum;
+    imgdown.setAttribute('onclick', 'svMoveCommand(this.id,"down");');
+    document.getElementById("cmdwrapper" + arraynum).appendChild(imgdown);
+
+    imgtop.type = "image";
+    imgtop.className = "ctrls";
+    imgtop.src = "img/move-top.png";
+    imgtop.title = "Move to top";
+    imgtop.id = arraynum;
+    imgtop.setAttribute('onclick', 'svMoveCommand(this.id,"top");');
+    document.getElementById("cmdwrapper" + arraynum).appendChild(imgtop);
+
+    imgbottom.type = "image";
+    imgbottom.className = "ctrls";
+    imgbottom.src = "img/move-bottom.png";
+    imgbottom.title = "Move to bottom";
+    imgbottom.id = arraynum;
+    imgbottom.setAttribute('onclick', 'svMoveCommand(this.id,"bottom");');
+    document.getElementById("cmdwrapper" + arraynum).appendChild(imgbottom);
+}
+
+function showRecentDirs(side,action)
+{
+    if (side == "left") {
+        var sd = "l";
+    }else{ var sd = "r"; }
+
+    // disable when not connected
+    if (eval(sd+"site.session") == -1) {
+        action = "invalid";
+    }
+
+    if (action == 'invalid') {
+        var select = document.getElementById(sd+"dirselect");
+        select.style.display = 'none';
+        var textbox = document.getElementById(sd+"path");
+        textbox.style.display = 'inline';
+        textbox.value = '';
+        return;
+    }
+
+    if (action == 'show') {
+        if (eval(side+"siderecentdirs").length == 0) {
+            return;
+        }
+        var textbox = document.getElementById(sd+"path");
+        textbox.style.display = 'none';
+        var select = document.getElementById(sd+"dirselect");
+
+        //wipe first
+        while (select.childNodes.length > 0) {
+            select.removeChild(select.lastChild);
+        }
+        //placeholder for going back
+        var option = document.createElement("option");
+        option.value = "--placeholder--";
+        option.text = "-Recent directories-";
+        eval(sd+"dirselect").appendChild(option);
+
+        select.style.display = 'inline';
+        for (var i = 0; i < eval(side+"siderecentdirs").length; i++) {
+           var option = document.createElement("option");
+           option.value = eval(side+"siderecentdirs")[i];
+           option.text = eval(side+"siderecentdirs")[i];
+           eval(sd+"dirselect").appendChild(option);
+        }
+        // deselect all so placeholder works
+        document.getElementById(sd+"dirselect").selectedIndex = "-1";
+    }
+    if (action == 'hide') {
+        var select = document.getElementById(sd+"dirselect");
+        select.style.display = 'none';
+        var textbox = document.getElementById(sd+"path");
+        textbox.style.display = 'inline';
+        var selecteddir = document.getElementById(sd+"dirselect").value;
+        if (selecteddir == "--placeholder--") {
+            return;
+        }
+        document.getElementById(sd+"path").value = selecteddir; 
+        doCWDEdit(side);
+    }
+}
+
+function rememberCWD(side,dir)
+{
+    var site = (side=="left")?lsite:rsite;
+    var sitename = sitelist[site.siteid]["NAME"];
+    if (dir == '..'){
+       return;
+    }else if (dir == sitelist[site.siteid]["STARTDIR"]) {
+        return;
+    }
+    //skip dupes
+    for (var i = 0; i < eval(side+"siderecentdirs").length; i++) {
+       if (dir == eval(side+"siderecentdirs")[i]) {
+          return;
+       }
+    }
+    if (eval(side+"siderecentdirs").length < 10) {
+        eval(side+"siderecentdirs").unshift(dir);
+    }else{
+        eval(side+"siderecentdirs").pop();
+        eval(side+"siderecentdirs").unshift(dir);
+    }
+}
