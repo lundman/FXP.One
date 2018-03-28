@@ -23,8 +23,10 @@ function BadMsg(msg){
   WriteLog("Received bad/unknown response: "+msg)
 }
 function WriteLog(message) {
-  message += "\n";
-  output.value+=message;
+  //message += "\n";
+  //output.value+=message;
+  message += "</br>";
+  output.innerHTML+=message;
   output.scrollTop = output.scrollHeight;
 }
 function WriteQMLog(message) {
@@ -33,12 +35,15 @@ function WriteQMLog(message) {
   qmoutput.scrollTop = qmoutput.scrollHeight;
 }
 function WriteLargeLog(side,message) {
-  message += "\n";
+  //message += "\n";
+  message += "</br>";
   if (side == "left") {
-      lwalloutput.value+=message;
+      //lwalloutput.value+=message;
+      lwalloutput.innerHTML+=message;
       lwalloutput.scrollTop = lwalloutput.scrollHeight;
   } else if (side == "right") {
-      rwalloutput.value+=message;
+      //rwalloutput.value+=message;
+      rwalloutput.innerHTML+=message;
       rwalloutput.scrollTop = rwalloutput.scrollHeight;
   }
 }
@@ -54,7 +59,8 @@ function toggleSblock(){
    }
 }
 function clearLog(area){
-   document.getElementById(area).value="";
+   //document.getElementById(area).value="";
+   document.getElementById(area).innerHTML="";
 }
 function hideLog(state){
    var out = document.getElementById("output");

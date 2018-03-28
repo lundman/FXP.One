@@ -5,6 +5,7 @@
   <script src="js/handling.js"></script>
   <script src="js/actions.js"></script>
   <script src="js/misc.js"></script>
+  <script src="js/ansi_up.js"></script>
   <script language="javascript" type="text/javascript">
  //  var wsUri = "wss://192.168.30.144:8886/";
    var wsUri = "wss://localhost:8886/";
@@ -237,28 +238,30 @@
   <input type="button" onclick="doSend();" name="send" value="Send">
   <br/>
   </div>
-  <textarea class="output" id="output" rows="15" cols="55" style="display: none;"></textarea></center>
+  </center>
+  <div contenteditable="true" class="logtextarea" id="output" rows="15" cols="55" style="display: none; width: 80%; margin: 0 auto;
+      height:200px; overflow-y:auto;overflow-x:hidden;"></div>
 </div>
 
 <div class="content" id="logviewer">
     <div class="row">
         <div class="col">
             <div class="wallheader" id="lloglabel">
-                <input type="image" align="right" class="ctrls" src="img/delete_item.png" title="Clear log" onclick="do_LogClear(\'left\');">
+            <input type="image" align="right" class="ctrls" src="img/delete_item.png" title="Clear log" onclick="do_LogClear('left');">
             </div>
         </div>
         <div class="col">
             <div class="wallheader" id="rloglabel">
-                <input type="image" align="right" class="ctrls" src="img/delete_item.png" title="Clear log" onclick="do_LogClear(\'right\');">
+            <input type="image" align="right" class="ctrls" src="img/delete_item.png" title="Clear log" onclick="do_LogClear('right');">
             </div>
         </div>
     </div>
     <div class="row">
         <div class="col" style="height: 80%;">
-            <textarea id="lwalloutput" class="logtextarea"> </textarea>
+            <div contenteditable="true" id="lwalloutput" class="logtextarea"></div>
         </div>
         <div class="col" style="height: 80%;">
-            <textarea id="rwalloutput" class="logtextarea"> </textarea>
+            <div contenteditable="true" id="rwalloutput" class="logtextarea"></div>
         </div>
     </div>
 </div>

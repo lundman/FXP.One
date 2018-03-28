@@ -1022,9 +1022,9 @@ function doEnterKey()
 function do_LogClear(clickside)
 {
     if (clickside == "left") {
-        document.getElementById("lwalloutput").value = ''; 
+        document.getElementById("lwalloutput").innerHTML = '';
     } else if (clickside == "right") {
-        document.getElementById("rwalloutput").value = ''; 
+        document.getElementById("rwalloutput").innerHTML = '';
     }
 }
 

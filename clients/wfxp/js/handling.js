@@ -159,7 +159,12 @@ function handle_LOG(data) {
     var side = "";
     if (data["SID"] == lsite.session){side="left";}
     else if (data["SID"] == rsite.session){side="right";}
-    var text = decode(data["MSG"]);
+    var initialtext = decode(data["MSG"]);
+
+    // ansi support
+    var ansi_up = new AnsiUp;
+    var text = ansi_up.ansi_to_html(initialtext);
+
     // literal text null showing up
     if (text === '(null)') {
         text = " ";
@@ -173,7 +178,7 @@ function handle_LOG(data) {
     if (drop) {
         return;
     }
-    // strip the numbers are ugly
+    // strip the ugly numbers
     var pattern = new RegExp(/^\d{3}-/);
     var cuttem = pattern.test(text);
     if (cuttem) {
@@ -468,9 +473,7 @@ function handle_QC(data)
 
 function handle_SITE(data)
 {
-    var text = decode(data["MSG"]);
-
-    WriteLog(text);
+    handle_LOG(data);
 }
 
 function handle_QCOMPARE(data)
