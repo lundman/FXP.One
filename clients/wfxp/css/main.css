@@ -28,6 +28,7 @@ body {
 #primary{display:none;}
 #sitemanager{display:none;}
 #queuemanager{display:none;}
+#logviewer{display:none;}
 
 .connbutt{
        color: #F00;
@@ -46,8 +47,43 @@ body {
 .processing {background-color: #0F0;}
 .subbed {background-color: #CCC; font-weight: bold;}
 
+/* flexing for logviewer */
+
+.row {
+    flex: 1;
+    display: flex;
+    flex-flow: row;
+}
+.col {
+    flex: 1;
+    display: flex;
+    flex-flow: column;
+    margin: 0px 5px;
+}
+.logtextarea {
+    flex: 1;
+    display: block;
+    margin: 0px 0;
+    padding: 1px;
+    border: 1px solid;
+    resize: none;
+    font: normal normal 10px monospace;
+    width: 100%
+}
+
+.topcmd {
+   resize: none;
+   width: 80px;
+}
+
+.hiddenselect {
+    display: none;
+    width: 111px;
+}
         .output {font: normal normal 10px monospace;resize: none;width:417;}
         .qmoutput {font: normal normal 10px sans-serif;resize: none;width:417;}
+        .walloutput {font: normal normal 10px monospace;resize: none;height:80%; width:417px; float:left;}
+        .wallheader { background-color: #666; border:1px solid #000; color: #FFF; font: normal normal 10px monospace;}
 	.table_wrapper {font: normal normal 10px sans-serif;border:1px solid #000;float:left;}
 	.table_wrapper select {font: normal normal 10px sans-serif;}
 	.table_wrapper input {font: normal normal 10px sans-serif;}

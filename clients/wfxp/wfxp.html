@@ -12,6 +12,8 @@
    var mypass = "";
    var output;
    var qmoutput;
+   var lwalloutput;
+   var rwalloutput;
    var socket;
    var currview="";
    var sitelist={};
@@ -24,13 +26,20 @@
    var debug = false;
    var eventqueue = [];
    var usequeue = true; var queuebatch = 50;
-   var filtercontent = "";
-   // needed for enter event
-   var side;
+   var sitesavedcommands= [];
+   var siterecentdirs = [];
+   var encodedsitecommands = "";
+   var encodedrecentdirs = "";
+   var leftsiderecentdirs = [];
+   var rightsiderecentdirs = [];
+   var selectedSite = "";
+   var queuenewlock = 0;
 
    function init() {
      output = document.getElementById("output");
      qmoutput = document.getElementById("qmoutput");
+     lwalloutput = document.getElementById("lwalloutput");
+     rwalloutput = document.getElementById("rwalloutput");
      var host = document.getElementById("host");
      host.value=localStorage.host ? localStorage.host:wsUri;
      var user = document.getElementById("user");
@@ -108,6 +117,7 @@
   <li id="pmtab" class=""><a href="#" value="click" onclick="toggleView('primary')">Main</a></li>
   <li id="smtab" class=""><a href="#" value="click" onclick="toggleView('sitemanager')">Sites</a></li>
   <li id="qmtab" class=""><a href="#" value="click" onclick="toggleView('queuemanager')">Queues</a></li>
+  <li id="lvtab" class=""><a href="#" value="click" onclick="toggleView('logviewer')">Site Log</a></li>
   </ul>
   </div>
 <div class="content" id="primary">
@@ -116,14 +126,19 @@
 <input type="image" class="ctrls" style="vertical-align: text-bottom;" src="img/site-disconnect.png" alt="Disconnect Site" title="Disconnect Site" onclick="do_SESSIONFREE('left');">
 <select valign="middle" id="lslist" name="lslist"></select>
 <input type="image" class="ctrls" src="img/enqueue.png" alt="Enqueue Item" title="Enqueue Item" onclick="doQueue('left');">
+<span>
 <input type="text" id="lpath"
-     title="CurrentDirectory" value="" onchange="doCWDEdit('left');">
-<select valign="middle" id="leftcmd" name="leftcmd" onChange="doCmdChange('left');">
+     title="CurrentDirectory" value="" ondblclick="showRecentDirs('left','show');" onchange="doCWDEdit('left');">
+<select class="hiddenselect" id="ldirselect" onchange="showRecentDirs('left','hide');">
+    <option value=""></option>
+</select>
+</span>
+<select valign="middle" id="leftcmd" class="topcmd" name="leftcmd" onChange="doCmdChange('left');">
     <option value="refresh">refresh</option>
     <option value="filter">filter</option>
     <option value="selectall">select all</option>
     <option value="clearall">clear all</option>
-   <option value="site" selected>site cmd</option>
+    <option value="site" selected>site cmd</option>
     <option value="mkdir">new dir</option>
     <option value="unlink">delete</option>
     <option value="rename">rename</option>
@@ -149,9 +164,14 @@
 <input type="image" class="ctrls" style="vertical-align: text-bottom;" src="img/site-disconnect.png" alt="Disconnect Site" title="Disconnect Site" onclick="do_SESSIONFREE('right');">
 <select valign="middle" id="rslist" name="rslist"></select>
 <input type="image" class="ctrls" src="img/enqueue.png" alt="Enqueue Item" title="Enqueue Item" onclick="doQueue('right');">
+<span>
 <input type="text" id="rpath"
-     title="CurrentDirectory" value="" onchange="doCWDEdit('right');">
-<select valign="middle" id="rightcmd" name="rightcmd" onChange="doCmdChange('right');">
+     title="CurrentDirectory" value="" ondblclick="showRecentDirs('right','show');" onchange="doCWDEdit('right');">
+<select class="hiddenselect" id="rdirselect" onchange="showRecentDirs('right','hide');">
+    <option value=""></option>
+</select>
+</span>
+<select valign="middle" id="rightcmd" class="topcmd" name="rightcmd" onChange="doCmdChange('right');">
     <option value="refresh">refresh</option>
     <option value="filter">filter</option>
     <option value="selectall">select all</option>
@@ -219,6 +239,30 @@
   </div>
   <textarea class="output" id="output" rows="15" cols="55" style="display: none;"></textarea></center>
 </div>
+
+<div class="content" id="logviewer">
+    <div class="row">
+        <div class="col">
+            <div class="wallheader" id="lloglabel">
+                <input type="image" align="right" class="ctrls" src="img/delete_item.png" title="Clear log" onclick="do_LogClear(\'left\');">
+            </div>
+        </div>
+        <div class="col">
+            <div class="wallheader" id="rloglabel">
+                <input type="image" align="right" class="ctrls" src="img/delete_item.png" title="Clear log" onclick="do_LogClear(\'right\');">
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col" style="height: 80%;">
+            <textarea id="lwalloutput" class="logtextarea"> </textarea>
+        </div>
+        <div class="col" style="height: 80%;">
+            <textarea id="rwalloutput" class="logtextarea"> </textarea>
+        </div>
+    </div>
+</div>
+
 <div class="content" id="sitemanager">
 
 <select id="sm_sites" title="Choose site to edit" value="-1"
@@ -244,6 +288,13 @@ Local: <input type="checkbox" id="sm_local"
   <br/>
  Startdir: <input type="text" id="sm_startdir"
      title="Change to directory (leave empty for root)" value="" onchange="">
+Server type: <select id="sm_svtype" title="Server software type." onChange="doLoadSiteCommands(this.options[this.selectedIndex].value);">
+    <option value="unset"> </option>
+    <option value="fxpone">FXPOne</option>
+    <option value="ioftpd">ioFTPD</option>
+    <option value="glftpd">glFTPD</option>
+    <option value="lundftpd">lundftpd</option>
+</select>
 Passive: <select id="sm_pasv" title="Use passive method when listing directories." onChange="">
     <option value="2">Auto</option>
     <option value="1">Yes</option>
@@ -318,6 +369,25 @@ Empty Dirs: <select id="sm_dempty" title="Skip empty directories (Default: yes)"
  <br/>
   Extra key pairs: <input type="text" id="sm_extra"
      title="Advanced usage. Specify extra 'key1=value1|key2=value2|...' entries." value="" onchange="">
+ <br/>
+
+<div id="savedCommandEditormain">
+</br>
+Saved command editor
+<div id="savedcmdeditoroutput" style="color: red;"></div>
+<br>
+New:
+<select id="sv_newcmd" title="Select a command" onChange="">
+</select>
+<input type="text" id="sv_newcmdargs" title="Command arguments" value="" onchange="">
+<input type="image" class="ctrls" src="img/enqueue.png" title="Add saved command" onclick="svNewCommand();">
+<br/>
+<br/>
+Saved commands</br>
+<div id="saved_commands">
+</div>
+
+</div>
 </div>
 <div class="content" id="queuemanager">
 <h1>Queue Manager</h1>

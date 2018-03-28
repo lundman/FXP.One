@@ -32,6 +32,16 @@ function WriteQMLog(message) {
   qmoutput.value+=message;
   qmoutput.scrollTop = qmoutput.scrollHeight;
 }
+function WriteLargeLog(side,message) {
+  message += "\n";
+  if (side == "left") {
+      lwalloutput.value+=message;
+      lwalloutput.scrollTop = lwalloutput.scrollHeight;
+  } else if (side == "right") {
+      rwalloutput.value+=message;
+      rwalloutput.scrollTop = rwalloutput.scrollHeight;
+  }
+}
 String.prototype.chomp = function () {
 return this.replace(/(\n|\r)+$/, '');
 }
@@ -317,19 +327,28 @@ function toggleView(view){
       changeCSS("#primary","display","block");document.getElementById("pmtab").setAttribute("class","selected");
       changeCSS("#sitemanager","display","none");document.getElementById("smtab").setAttribute("class","");
       changeCSS("#queuemanager","display","none");document.getElementById("qmtab").setAttribute("class","");
+      changeCSS("#logviewer","display","none");document.getElementById("lvtab").setAttribute("class","");
    }else if(view == "sitemanager"){
       changeCSS("#primary","display","none");document.getElementById("pmtab").setAttribute("class","");
       changeCSS("#sitemanager","display","block");document.getElementById("smtab").setAttribute("class","selected");
       changeCSS("#queuemanager","display","none");document.getElementById("qmtab").setAttribute("class","");
+      changeCSS("#logviewer","display","none");document.getElementById("lvtab").setAttribute("class","");
    }else if(view == "queuemanager"){
       changeCSS("#primary","display","none");document.getElementById("pmtab").setAttribute("class","");
       changeCSS("#sitemanager","display","none");document.getElementById("smtab").setAttribute("class","");
       changeCSS("#queuemanager","display","block");document.getElementById("qmtab").setAttribute("class","selected");
+      changeCSS("#logviewer","display","none");document.getElementById("lvtab").setAttribute("class","");
       do_QMRefresh();
+   }else if(view == "logviewer"){
+      changeCSS("#primary","display","none");document.getElementById("pmtab").setAttribute("class","");
+      changeCSS("#sitemanager","display","none");document.getElementById("smtab").setAttribute("class","");
+      changeCSS("#queuemanager","display","none");document.getElementById("qmtab").setAttribute("class","");
+      changeCSS("#logviewer","display","block");document.getElementById("lvtab").setAttribute("class","selected");
    }else{
       changeCSS("#primary","display","none");document.getElementById("pmtab").setAttribute("class","");
       changeCSS("#sitemanager","display","none");document.getElementById("smtab").setAttribute("class","");
       changeCSS("#queuemanager","display","none");document.getElementById("qmtab").setAttribute("class","");
+      changeCSS("#logviewer","display","none");document.getElementById("lvtab").setAttribute("class","");
    }
 }
 
@@ -356,5 +375,55 @@ function doPwdChange()
     socket.send("SETPASS|OLD="+opass+"|NEW="+npass+"\n");
 
     togglePwdChange();
+}
+
+function b64wrap(str,command)
+{
+    if (command == "encode") {
+        var tmpstr = b64EncodeUnicode(str);
+        if (tmpstr) {
+            var encodedstr = b64prep(tmpstr,"encode");
+        }
+        if (encodedstr) {
+            tmpstr = encodedstr;
+            return tmpstr;
+        }
+    }
+    if (command == "decode") {
+        var tmpstr = b64prep(str,"decode");
+        if (tmpstr) {
+            var decodedstr = b64DecodeUnicode(tmpstr,"decode");
+        }
+        if (decodedstr) {
+            tmpstr = decodedstr;
+            return tmpstr;
+        }
+    }
+}
+
+function b64prep(str,command)
+{
+    if(command == "encode") {
+        return str.replace(/\+/g, '-').replace(/\//g, '_').replace(/\=+$/, '');
+    }else if(command == "decode") {
+        if (str.length % 4 != 0) {
+            str += ('===').slice(0, 4 - (str.length % 4));
+            return str.replace(/-/g, '+').replace(/_/g, '/');
+        }else{
+            return str;
+        }
+    }
+}
+
+function b64EncodeUnicode(str) {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+        return String.fromCharCode(parseInt(p1, 16))
+    }))
+}
+
+function b64DecodeUnicode(str) {
+    return decodeURIComponent(Array.prototype.map.call(atob(str), function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+    }).join(''))
 }
 ///////////////////STUFF BELOW HERE IS NO LONGER USED//////////////////////////
