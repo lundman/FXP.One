@@ -234,15 +234,12 @@ void handler_withuser(session_t *session, int event, int id, int reply,
 			break;
 
 		case HANDLER_SITE_REPLY:
-			if (huser) {
-				char *encoded;
-				encoded = misc_url_encode(line);
+			if (huser)
 				lion_printf(huser, "SITE|SID=%u|CODE=%d|MSG=%s\r\n",
 							node->id,
 							handler_codeok(reply, 0),
-							encoded);
-				SAFE_FREE(encoded);
-			}
+							line);
+
 			break;
 
 		case HANDLER_RNFR_REPLY:
