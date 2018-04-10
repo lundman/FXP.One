@@ -105,8 +105,11 @@ function handle_SITELIST(data){
             rsites.add(opt.cloneNode(true),null);
             smsites.add(opt.cloneNode(true),null);
 
-            if(localStorage.lastleftsite == key){lsites.selectedIndex = i;}
-            if(localStorage.lastrightsite == key){rsites.selectedIndex = i;}
+            if (firstload == 0) {
+                if(localStorage.lastleftsite == key){lsites.selectedIndex = i;}
+                if(localStorage.lastrightsite == key){rsites.selectedIndex = i;}
+                firstload = 1;
+            }
         }
 
         // we're working on this site, reload
