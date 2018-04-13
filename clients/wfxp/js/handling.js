@@ -59,6 +59,14 @@ function handle_SITELIST(data){
         sitelist = {};
         var lsites = document.getElementById("lslist");
         var rsites = document.getElementById("rslist");
+
+        if ( lsites.length > 0 ) {
+            var lsiteindex = lsites.selectedIndex;
+            var rsiteindex = rsites.selectedIndex;
+            selectedlsiteid = lsites[lsiteindex].value;
+            selectedrsiteid = rsites[rsiteindex].value;
+        }
+
         while (lsites.length> 0) {
             lsites.remove(0);
         }
@@ -105,12 +113,25 @@ function handle_SITELIST(data){
             rsites.add(opt.cloneNode(true),null);
             smsites.add(opt.cloneNode(true),null);
 
-            if (firstload == 0) {
-                if(localStorage.lastleftsite == key){lsites.selectedIndex = i;}
-                if(localStorage.lastrightsite == key){rsites.selectedIndex = i;}
-                firstload = 1;
+            // remember the site we had selected so sitelist doesn't wipe it
+            if ( selectedlsiteid == key && firstload !== "0") {
+                lsites.selectedIndex = i;
+            }
+            if ( selectedrsiteid == key && firstload !== "0") {
+                rsites.selectedIndex = i;
+            }
+
+            if (firstload == "0") {
+                if(localStorage.lastleftsite == key){
+                    lsites.selectedIndex = i;
+                }
+                if(localStorage.lastrightsite == key){
+                    rsites.selectedIndex = i;
+                }
             }
         }
+        // initial load of last used sites completed
+        firstload = 1;
 
         // we're working on this site, reload
         for (var i=0; i<smsites.options.length; i++) {
