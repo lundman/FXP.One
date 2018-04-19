@@ -59,6 +59,14 @@ function handle_SITELIST(data){
         sitelist = {};
         var lsites = document.getElementById("lslist");
         var rsites = document.getElementById("rslist");
+
+        if ( lsites.length > 0 ) {
+            var lsiteindex = lsites.selectedIndex;
+            var rsiteindex = rsites.selectedIndex;
+            selectedlsiteid = lsites[lsiteindex].value;
+            selectedrsiteid = rsites[rsiteindex].value;
+        }
+
         while (lsites.length> 0) {
             lsites.remove(0);
         }
@@ -105,9 +113,25 @@ function handle_SITELIST(data){
             rsites.add(opt.cloneNode(true),null);
             smsites.add(opt.cloneNode(true),null);
 
-            if(localStorage.lastleftsite == key){lsites.selectedIndex = i;}
-            if(localStorage.lastrightsite == key){rsites.selectedIndex = i;}
+            // remember the site we had selected so sitelist doesn't wipe it
+            if ( selectedlsiteid == key && firstload !== "0") {
+                lsites.selectedIndex = i;
+            }
+            if ( selectedrsiteid == key && firstload !== "0") {
+                rsites.selectedIndex = i;
+            }
+
+            if (firstload == "0") {
+                if(localStorage.lastleftsite == key){
+                    lsites.selectedIndex = i;
+                }
+                if(localStorage.lastrightsite == key){
+                    rsites.selectedIndex = i;
+                }
+            }
         }
+        // initial load of last used sites completed
+        firstload = 1;
 
         // we're working on this site, reload
         for (var i=0; i<smsites.options.length; i++) {
@@ -159,7 +183,12 @@ function handle_LOG(data) {
     var side = "";
     if (data["SID"] == lsite.session){side="left";}
     else if (data["SID"] == rsite.session){side="right";}
-    var text = decode(data["MSG"]);
+    var initialtext = decode(data["MSG"]);
+
+    // ansi support
+    var ansi_up = new AnsiUp;
+    var text = ansi_up.ansi_to_html(initialtext);
+
     // literal text null showing up
     if (text === '(null)') {
         text = " ";
@@ -173,7 +202,7 @@ function handle_LOG(data) {
     if (drop) {
         return;
     }
-    // strip the numbers are ugly
+    // strip the ugly numbers
     var pattern = new RegExp(/^\d{3}-/);
     var cuttem = pattern.test(text);
     if (cuttem) {
@@ -468,9 +497,7 @@ function handle_QC(data)
 
 function handle_SITE(data)
 {
-    var text = decode(data["MSG"]);
-
-    WriteLog(text);
+    handle_LOG(data);
 }
 
 function handle_QCOMPARE(data)

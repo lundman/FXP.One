@@ -64,11 +64,13 @@ body {
     flex: 1;
     display: block;
     margin: 0px 0;
-    padding: 1px;
+    padding: 0px;
     border: 1px solid;
     resize: none;
     font: normal normal 10px monospace;
-    width: 100%
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .topcmd {
@@ -83,7 +85,8 @@ body {
         .output {font: normal normal 10px monospace;resize: none;width:417;}
         .qmoutput {font: normal normal 10px sans-serif;resize: none;width:417;}
         .walloutput {font: normal normal 10px monospace;resize: none;height:80%; width:417px; float:left;}
-        .wallheader { background-color: #666; border:1px solid #000; color: #FFF; font: normal normal 10px monospace;}
+        .wallheader { background-color: #666; border:1px solid #000; width:100%; overflow: auto;
+            color: #FFF; font: normal normal 10px monospace;}
 	.table_wrapper {font: normal normal 10px sans-serif;border:1px solid #000;float:left;}
 	.table_wrapper select {font: normal normal 10px sans-serif;}
 	.table_wrapper input {font: normal normal 10px sans-serif;}

@@ -1022,9 +1022,9 @@ function doEnterKey()
 function do_LogClear(clickside)
 {
     if (clickside == "left") {
-        document.getElementById("lwalloutput").value = ''; 
+        document.getElementById("lwalloutput").innerHTML = '';
     } else if (clickside == "right") {
-        document.getElementById("rwalloutput").value = ''; 
+        document.getElementById("rwalloutput").innerHTML = '';
     }
 }
 
@@ -1450,11 +1450,11 @@ function rememberCWD(side,dir)
     }else if (dir == sitelist[site.siteid]["STARTDIR"]) {
         return;
     }
-    //skip dupes
+    // oft used dirs to top
     for (var i = 0; i < eval(side+"siderecentdirs").length; i++) {
-       if (dir == eval(side+"siderecentdirs")[i]) {
-          return;
-       }
+        if (dir == eval(side+"siderecentdirs")[i]) {
+            eval(side+"siderecentdirs").splice(i,1);
+        }
     }
     if (eval(side+"siderecentdirs").length < 10) {
         eval(side+"siderecentdirs").unshift(dir);
