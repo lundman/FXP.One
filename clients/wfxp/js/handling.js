@@ -200,6 +200,14 @@ function handle_LOG(data) {
     var droppattern = new RegExp(/^\d{3}[^-]/);
     var drop = droppattern.test(text);
     if (drop) {
+        // drop everything that isn't site cmd returns
+        var sitecmdretrun = new RegExp(/^\d{3}.*command.*/);
+        var sitekeep = sitecmdretrun.test(text);
+        if (sitekeep) {
+           var siteprint = text.slice(4);
+           WriteLog(siteprint);
+           WriteLargeLog(side,siteprint);
+        }
         return;
     }
     // strip the ugly numbers
@@ -497,7 +505,9 @@ function handle_QC(data)
 
 function handle_SITE(data)
 {
-    handle_LOG(data);
+   // log is enabled - not needed for now
+   // handle_LOG(data);
+   return;
 }
 
 function handle_QCOMPARE(data)
