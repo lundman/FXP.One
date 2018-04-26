@@ -329,7 +329,7 @@ void clomps_ircqueue(trade_t *trade, char *releasename,
     aq->src_site->current_dir = 0;
     aq->dst_site->current_dir = 0;
 
-	for (i = 0; i < src->num_dirs; i++) {
+	for (i = 0; i < aq->src_site->num_dirs; i++) {
 		if (aq->src_site->dirs[ i ] && trade->srcdir &&
 			(!strcmp(aq->src_site->dirs[ i ], trade->srcdir))) {
 			aq->src_site->current_dir = i;
@@ -337,7 +337,7 @@ void clomps_ircqueue(trade_t *trade, char *releasename,
 		}
 	}
 
-	for (i = 0; i < dst->num_dirs; i++) {
+	for (i = 0; i < aq->dst_site->num_dirs; i++) {
 		if (aq->dst_site->dirs[ i ] && trade->dstdir &&
 			(!strcmp(aq->dst_site->dirs[ i ], trade->dstdir))) {
 			aq->dst_site->current_dir = i;

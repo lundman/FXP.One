@@ -726,15 +726,14 @@ void handler_queue(session_t *session, int event, int id, int reply,
 
 
 		case QUEUE_EVENT_PHASE_12_SRC_226:
-			queue->items->src_transfer++;
+			if (queue->items) queue->items->src_transfer++;
 			if (reply == 226)
 				break;
 			queue_adderr_src(queue->items, line);
 			break;
 
 		case QUEUE_EVENT_PHASE_12_DST_226:
-
-			queue->items->dst_transfer++;
+			if (queue->items) queue->items->dst_transfer++;
 			if (reply == 226)
 				break;
 			queue_adderr_dst(queue->items, line);
