@@ -432,4 +432,11 @@ function b64DecodeUnicode(str) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
     }).join(''))
 }
+
+function TextToAnsi(text) {
+    var ansi_up = new AnsiUp;
+    var ansitext = ansi_up.ansi_to_html(text);
+    return ansitext;
+}
+
 ///////////////////STUFF BELOW HERE IS NO LONGER USED//////////////////////////

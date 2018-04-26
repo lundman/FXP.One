@@ -183,44 +183,47 @@ function handle_LOG(data) {
     var side = "";
     if (data["SID"] == lsite.session){side="left";}
     else if (data["SID"] == rsite.session){side="right";}
-    var initialtext = decode(data["MSG"]);
-
-    // ansi support
-    var ansi_up = new AnsiUp;
-    var text = ansi_up.ansi_to_html(initialtext);
+    var text = decode(data["MSG"]);
 
     // literal text null showing up
     if (text === '(null)') {
-        text = " ";
-        WriteLog(text);
-        WriteLargeLog(side,text);
         return;
     }
-    // keep: lines with XXX-
-    var droppattern = new RegExp(/^\d{3}[^-]/);
-    var drop = droppattern.test(text);
-    if (drop) {
-        // drop everything that isn't site cmd returns
-        var sitecmdretrun = new RegExp(/^\d{3}.*command.*/);
-        var sitekeep = sitecmdretrun.test(text);
-        if (sitekeep) {
-           var siteprint = text.slice(4);
-           WriteLog(siteprint);
-           WriteLargeLog(side,siteprint);
+
+    // limited space on the main site log
+    var pattern1 = new RegExp(/^\d{3}[^-]/);
+    var pattern1match = pattern1.test(text);
+    if (pattern1match) {
+        // these all go to the main site log
+        var mainlogmsg = new RegExp(/^(200|220|226|230|421|425|426|500|501|502|504|550)[^-]/);
+        var matchedmainlog = mainlogmsg.test(text);
+        if (matchedmainlog) {
+            var ansitext = TextToAnsi(text);
+            WriteLog(ansitext);
+            WriteLargeLog(side,ansitext);
+            return;
+        } else {
+            var ansitext = TextToAnsi(text);
+            WriteLargeLog(side,ansitext);
+            return;
         }
-        return;
     }
-    // strip the ugly numbers
+
+    // drop first four characters for server messages with a trailing -
     var pattern = new RegExp(/^\d{3}-/);
     var cuttem = pattern.test(text);
     if (cuttem) {
-       var newtext = text.slice(4);
-       WriteLog(newtext);
-       WriteLargeLog(side,newtext);
-    }else{
-        WriteLog(text);
-        WriteLargeLog(side,text);
+        var newtext = text.slice(4);
+        var ansitext = TextToAnsi(newtext);
+        WriteLog(ansitext);
+        WriteLargeLog(side,ansitext);
+        return;
     }
+
+    // The rest (ansi)
+    var ansitext = TextToAnsi(text);
+    WriteLog(ansitext);
+    WriteLargeLog(side,ansitext);
 }
 
 function handle_CONNECT(data){
@@ -505,9 +508,10 @@ function handle_QC(data)
 
 function handle_SITE(data)
 {
-   // log is enabled - not needed for now
-   // handle_LOG(data);
-   return;
+  if (data["CODE"] != '-1') {
+      return;
+  }
+  handle_LOG(data);
 }
 
 function handle_QCOMPARE(data)
