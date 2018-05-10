@@ -163,7 +163,7 @@ function handle_SESSIONNEW(data){
         var side="left";
         var site = (side=="left")?lsite:rsite;
         // clear the site log
-        document.getElementById("lwalloutput").value = '';
+        document.getElementById("lwalloutput").innerHTML = '';
         // update the name in the site log
         document.getElementById("lloglabel").innerHTML = '<input type="image" align="right" class="ctrls" src="img/delete_item.png" title="Clear log" onclick="do_LogClear(\'left\');">';
         document.getElementById("lloglabel").innerHTML += "[ " + sitelist[site.siteid]["NAME"] + " ] site log";
@@ -171,7 +171,7 @@ function handle_SESSIONNEW(data){
                var side="right";
                var site = (side=="left")?lsite:rsite;
                // clear the site log
-               document.getElementById("rwalloutput").value = '';
+               document.getElementById("rwalloutput").innerHTML = '';
                // update the name in the site log
                document.getElementById("rloglabel").innerHTML = '<input type="image" align="right" class="ctrls" src="img/delete_item.png" title="Clear log" onclick="do_LogClear(\'right\');">';
                document.getElementById("rloglabel").innerHTML += "[ " + sitelist[site.siteid]["NAME"] + " ] site log";
