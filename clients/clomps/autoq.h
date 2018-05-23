@@ -40,6 +40,8 @@ struct autoq_struct {
     int requeue;
     int running;
 
+	time_t last_info;
+
 	struct autoq_struct *next;
 };
 

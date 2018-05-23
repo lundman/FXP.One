@@ -423,12 +423,18 @@ void autoq_cmd_qs(char **keys, char **values, int items,void *optarg)
                             if (strlen(&srcname[len + len2]) <= 0) continue;
 
                             // Occasionally report speeds
-                            if (!aq->files[ q ]->transfers &&
+							time_t now;
+							time(&now);
+                            if ((!aq->last_info ||
+									(now - aq->last_info > 120)) &&
                                 timex &&
-                                KBs)
-                                printf("Queue processing..: %ss %sKB/s\n",
-                                       timex, KBs);
-
+                                KBs) {
+								if (atoi(KBs) >= 10) {
+									printf("Queue processing..: %ss %sKB/s\n",
+										timex, KBs);
+									aq->last_info = now;
+								}
+							}
                             aq->files[ q ]->transfers++;
                             debugf("[autoq] increased transfers on '%s' to %d\n",
                                    aq->files[ q ]->name,
