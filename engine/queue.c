@@ -2957,6 +2957,8 @@ void queue_directory_think(queue_t *queue,
 			src = misc_url_encode(qitem->src.fullpath);
 			dst = misc_url_encode(qitem->dst.fullpath);
 
+			// We will tag these (possibly many) QC|INSERT as "EXPANDING"
+			// and follow with
 			for (j = 0; j < queue->num_users; j++)
 				if (queue->users[j] && queue->users[j]->handle)
 					lion_printf(queue->users[j]->handle,
@@ -2964,7 +2966,7 @@ void queue_directory_think(queue_t *queue,
 						"|QTYPE=%s"
 						"|DATE=%lu"
 						"|SRCSIZE=%"PRIu64
-						"\r\n",
+						"|EXPANDING\r\n",
 						queue->id,
 						npos,
 						qitem->src_is_north ? "NORTH" : "SOUTH",
@@ -2980,6 +2982,14 @@ void queue_directory_think(queue_t *queue,
 		debugf("queued.\n");
 	}
 
+	// We may have sent lots of EXPANDING lines, so send a REFRESH
+	// suggestion to the clients.
+	if (queue->num_users && num_files >= 1) {
+		for (int j = 0; j < queue->num_users; j++)
+			if (queue->users[j] && queue->users[j]->handle)
+				lion_printf(queue->users[j]->handle,
+					"QS|REFRESH\r\n");
+	}
 }
 
 
