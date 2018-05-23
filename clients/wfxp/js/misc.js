@@ -59,8 +59,11 @@ function toggleSblock(){
    }
 }
 function clearLog(area){
-   //document.getElementById(area).value="";
-   document.getElementById(area).innerHTML="";
+   if(area == "qmoutput") {
+      document.getElementById(area).value="";
+   } else {
+      document.getElementById(area).innerHTML="";
+   }
 }
 function hideLog(state){
    var out = document.getElementById("output");
