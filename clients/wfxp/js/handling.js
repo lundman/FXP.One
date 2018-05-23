@@ -435,6 +435,9 @@ function handle_QS(data)
         }
         WriteQMLog("QID["+qid+"] Transfer completed after "+data["TIME"]+"s at "+data["KB/S"]+"KB/s");
     }
+    if ("REFRESH" in data) {
+        refreshTable("queue");
+    }
 }
 
 // This function needs fixing. MoveRow is crappy, and we lose that it is checked.
@@ -502,6 +505,9 @@ function handle_QC(data)
     if ("INSERT" in data) {
         queue.listing.splice(data["@"],0,data);
         if(!debug) {WriteLog("Inserted new queue item "+data["SRCPATH"]+" to "+data["DSTPATH"]);}
+        if ("EXPANDING" in data) {
+            return;
+        }
     }
     refreshTable("queue");
 }
