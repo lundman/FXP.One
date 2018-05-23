@@ -254,14 +254,22 @@ function changeSort(side,stype){
 function refreshTable(side){
     clearTable(side);
     if(side == "queue"){
+        var sitedata = (side=="left")?lsite:rsite;
+        var byfids = {};
+        for (var i = 0; i < sitedata.listing.length; i++) {
+             byfids[sitedata.listing[i]["FID"]] = sitedata.listing[i];
+        }
         for (var i = 0; i < queue.listing.length; i++) {
             var mydat = queue.listing[i];
             var src = decode(mydat["SRCPATH"]);
             var dst = decode(mydat["DSTPATH"]);
+            var fid = decode(mydat["FID"]);
+            var size = byfids[fid]["SIZE"];
+            var date = time2str(byfids[fid]["DATE"]);
             addTableRow('queue',"",
                         ["<input type='checkbox' name='QITEM#"+mydat["@"]+"' value='QITEM#"+mydat["@"]+"'/>"+src,src],
-                        [mydat["SRCSIZE"],""], // size
-                        [0,""], // date
+                        [size,""], // size
+                        [date,""], // date
                         [dst,dst]);
         }
     } else if(side == "qmqueue"){
