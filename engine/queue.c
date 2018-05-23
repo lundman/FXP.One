@@ -2985,7 +2985,8 @@ void queue_directory_think(queue_t *queue,
 	// We may have sent lots of EXPANDING lines, so send a REFRESH
 	// suggestion to the clients.
 	if (queue->num_users && num_files >= 1) {
-		for (int j = 0; j < queue->num_users; j++)
+		int j;
+		for (j = 0; j < queue->num_users; j++)
 			if (queue->users[j] && queue->users[j]->handle)
 				lion_printf(queue->users[j]->handle,
 					"QS|REFRESH\r\n");
