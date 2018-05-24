@@ -260,10 +260,13 @@ function refreshTable(side){
              byfids[sitedata.listing[i]["FID"]] = sitedata.listing[i];
         }
         for (var i = 0; i < queue.listing.length; i++) {
+            var size = "256000";
+            var date = "Jul 23 1985";
             var mydat = queue.listing[i];
             var src = decode(mydat["SRCPATH"]);
             var dst = decode(mydat["DSTPATH"]);
             var fid = decode(mydat["FID"]);
+
             // initial enqueue
             if (fid !== 'undefined') {
                 var size = byfids[fid]["SIZE"];
@@ -274,8 +277,6 @@ function refreshTable(side){
                 var size = decode(mydat["SRCSIZE"]);
                 var date = time2str(decode(mydat["DATE"]));
             }
-            if (size === 'undefined') { size = "256000"; }
-            if (date === 'undefined') { date = "Jul 23 1985"; }
 
             addTableRow('queue',"",
                         ["<input type='checkbox' name='QITEM#"+mydat["@"]+"' value='QITEM#"+mydat["@"]+"'/>"+src,src],
