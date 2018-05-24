@@ -274,6 +274,9 @@ function refreshTable(side){
                 var size = decode(mydat["SRCSIZE"]);
                 var date = time2str(decode(mydat["DATE"]));
             }
+            if (size === 'undefined') { size = "256000"; }
+            if (date === 'undefined') { date = "Jul 23 1985"; }
+
             addTableRow('queue',"",
                         ["<input type='checkbox' name='QITEM#"+mydat["@"]+"' value='QITEM#"+mydat["@"]+"'/>"+src,src],
                         [size,""], // size
