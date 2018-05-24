@@ -254,7 +254,14 @@ function changeSort(side,stype){
 function refreshTable(side){
     clearTable(side);
     if(side == "queue"){
-        var sitedata = (side=="left")?lsite:rsite;
+
+        var sitedata;
+        if (enqueuesid == lsite.session ) {
+            sitedata = lsite;
+        } else {
+            sitedata = rsite;
+        }
+
         var byfids = {};
         for (var j = 0; j < sitedata.listing.length; j++) {
              byfids[sitedata.listing[j]["FID"]] = sitedata.listing[j];
@@ -264,9 +271,9 @@ function refreshTable(side){
             var src = decode(mydat["SRCPATH"]);
             var dst = decode(mydat["DSTPATH"]);
             var fid = decode(mydat["FID"]);
-
             var size;
             var date;
+
             if (mydat["SRCSIZE"]) {
                 size = decode(mydat["SRCSIZE"]);
             } else {
