@@ -264,8 +264,16 @@ function refreshTable(side){
             var src = decode(mydat["SRCPATH"]);
             var dst = decode(mydat["DSTPATH"]);
             var fid = decode(mydat["FID"]);
-            var size = byfids[fid]["SIZE"];
-            var date = time2str(byfids[fid]["DATE"]);
+            // initial enqueue
+            if (fid !== 'undefined') {
+                var size = byfids[fid]["SIZE"];
+                var date = time2str(byfids[fid]["DATE"]);
+            } else {
+            // Queue go has started so we cannot use the FID data any longer
+            // Get the rest of the data from the QC|INSERT lines
+                var size = decode(mydat["SRCSIZE"]);
+                var date = time2str(decode(mydat["DATE"]));
+            }
             addTableRow('queue',"",
                         ["<input type='checkbox' name='QITEM#"+mydat["@"]+"' value='QITEM#"+mydat["@"]+"'/>"+src,src],
                         [size,""], // size
