@@ -256,26 +256,32 @@ function refreshTable(side){
     if(side == "queue"){
         var sitedata = (side=="left")?lsite:rsite;
         var byfids = {};
-        for (var i = 0; i < sitedata.listing.length; i++) {
-             byfids[sitedata.listing[i]["FID"]] = sitedata.listing[i];
+        for (var j = 0; j < sitedata.listing.length; j++) {
+             byfids[sitedata.listing[j]["FID"]] = sitedata.listing[j];
         }
         for (var i = 0; i < queue.listing.length; i++) {
-            var size = "256000";
-            var date = "Jul 23 1985";
             var mydat = queue.listing[i];
             var src = decode(mydat["SRCPATH"]);
             var dst = decode(mydat["DSTPATH"]);
             var fid = decode(mydat["FID"]);
 
-            // initial enqueue
-            if (fid !== 'undefined') {
-                var size = byfids[fid]["SIZE"];
-                var date = time2str(byfids[fid]["DATE"]);
+            var size;
+            var date;
+            if (mydat["SRCSIZE"]) {
+                size = decode(mydat["SRCSIZE"]);
             } else {
-            // Queue go has started so we cannot use the FID data any longer
-            // Get the rest of the data from the QC|INSERT lines
-                var size = decode(mydat["SRCSIZE"]);
-                var date = time2str(decode(mydat["DATE"]));
+                size = byfids[fid]["SIZE"];
+            }
+            if (mydat["DATE"]) {
+                date = time2str(decode(mydat["DATE"]));
+            } else {
+                date = time2str(byfids[fid]["DATE"]);
+            }
+            if (size == 'undefined') {
+                size = "256000";
+            }
+            if (date == 'undefined') {
+                date = "Jul 23 1985";
             }
 
             addTableRow('queue',"",
