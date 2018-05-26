@@ -85,8 +85,6 @@ function doQueue(side){
             var pd = document.getElementById(side);
             var checks = pd.getElementsByTagName('input');
             var i;
-            // remember the side we clicked enqueue from
-            enqueuesid = site["session"];
             for (i = 0; i < checks.length; i++) {
                 if (checks[i].type == 'checkbox' && checks[i].checked == true) {
                     var source = (side=="left")?"NORTH":"SOUTH";
