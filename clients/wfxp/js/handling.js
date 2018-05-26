@@ -335,9 +335,14 @@ function handle_DIRLIST(data){
     var sitedata = (sid==lsite.session)?lsite:rsite;
     if("BEGIN" in data){
         sitedata.listing = [];
+        sitedata.fidlisting = {};
         clearTable(side);
         dirlistStatus(side,"**PROCESSING**");
     }else if("END" in data){
+        // used in refreshTable for access via fid
+        for (var i = 0; i < sitedata.listing.length; i++) {
+            sitedata.fidlisting[sitedata.listing[i]["FID"]] = sitedata.listing[i];
+        }
         refreshTable(side);
         if(!debug) {WriteLog("Directory listing complete.");}
     }else{
@@ -353,9 +358,11 @@ function handle_QUEUENEW(data)
     queuenewlock = 0;
     if ((data["NORTH_SID"]==lsite.session) &&
         (data["SOUTH_SID"]==rsite.session)) {
+        queuesidesid = {"NORTH":lsite.session, "SOUTH":rsite.session};
         queue.qid = data["QID"];
     } else if ((data["NORTH_SID"]==rsite.session) &&
-               (data["SOUTH_SID"]==lsite.session)) {
+        (data["SOUTH_SID"]==lsite.session)) {
+        queuesidesid = {"NORTH":rsite.session, "SOUTH":lsite.session};
         queue.qid = data["QID"];
     } else {
         return;// not our queue

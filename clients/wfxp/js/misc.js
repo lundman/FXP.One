@@ -254,43 +254,38 @@ function changeSort(side,stype){
 function refreshTable(side){
     clearTable(side);
     if(side == "queue"){
-
-        var sitedata;
-        if (enqueuesid == lsite.session ) {
-            sitedata = lsite;
-        } else {
-            sitedata = rsite;
-        }
-
-        var byfids = {};
-        for (var j = 0; j < sitedata.listing.length; j++) {
-             byfids[sitedata.listing[j]["FID"]] = sitedata.listing[j];
-        }
         for (var i = 0; i < queue.listing.length; i++) {
             var mydat = queue.listing[i];
             var src = decode(mydat["SRCPATH"]);
             var dst = decode(mydat["DSTPATH"]);
             var fid = decode(mydat["FID"]);
+            var qside = decode(mydat["SRC"]);
+            var sid = queuesidesid[qside];
+            var sitedata = (sid==lsite.session)?lsite:rsite;
             var size;
             var date;
-
             if (mydat["SRCSIZE"]) {
                 size = decode(mydat["SRCSIZE"]);
             } else {
-                size = byfids[fid]["SIZE"];
+                if (sitedata.fidlisting[fid]["SIZE"]) {
+                    size = sitedata.fidlisting[fid]["SIZE"];
+                }
             }
             if (mydat["DATE"]) {
                 date = time2str(decode(mydat["DATE"]));
             } else {
-                date = time2str(byfids[fid]["DATE"]);
+                if (sitedata.fidlisting[fid]["DATE"]) {
+                    date = time2str(sitedata.fidlisting[fid]["DATE"]);
+                }
             }
             if (size == 'undefined') {
                 size = "256000";
             }
             if (date == 'undefined') {
+                // Amiga 1000
                 date = "Jul 23 1985";
             }
-
+            // debug WriteLog("src: " + src + " dst: " + dst + " fid: " + fid + " qside: " + qside + " sid: " + sid + " sitedata: " + sitedata + " size: " + size + " date: " + date );
             addTableRow('queue',"",
                         ["<input type='checkbox' name='QITEM#"+mydat["@"]+"' value='QITEM#"+mydat["@"]+"'/>"+src,src],
                         [size,""], // size
