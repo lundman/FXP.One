@@ -153,6 +153,8 @@
 <input type="text" id="leftcmdinput"
      title="Command input (Use $< or $> to iterate on selected items from left, or right, file lists). filters are regex form." value="">
 <input type="image" id="leftcommand" class="ctrls" src="img/execute.png" alt="Execute Command" title="Execute Command" onclick="doCommand('left');">
+<input align="right" type="image" class="ctrls" src="img/select_none.png" title="Deselect all" onclick="clearAllCheckboxes('left');">
+<input align="right" type="image" class="ctrls" src="img/select_all.png" title="Select all" onclick="setAllCheckboxes('left');">
     <div class="header" id="lefthead">
         <div class="head1"><a href="#" onclick="changeSort('left','NAME');">Filename</a></div>
         <div class="head2"><a href="#" onclick="changeSort('left','SIZE');">Size</a></div>
@@ -191,6 +193,8 @@
 <input type="text" id="rightcmdinput"
      title="Command input (Use $< or $> to iterate on selected items). filters are regex form" value="">
 <input type="image" id="rightcommand" class="ctrls" src="img/execute.png" alt="Execute Command" title="Execute Command" onclick="doCommand('right');">
+<input align="right" type="image" class="ctrls" src="img/select_none.png" title="Deselect all" onclick="clearAllCheckboxes('right');">
+<input align="right" type="image" class="ctrls" src="img/select_all.png" title="Select all" onclick="setAllCheckboxes('right');">
     <div class="header" id="righthead">
         <div class="head1"><a href="#" onclick="changeSort('right','NAME');">Filename</a></div>
         <div class="head2"><a href="#" onclick="changeSort('right','SIZE');">Size</a></div>
