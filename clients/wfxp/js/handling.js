@@ -407,6 +407,7 @@ function handle_GO(data)
 {
     if (data["QID"] != queue.qid) return;
     if (data["CODE"] != 0) return;
+    clearLog("output");
     WriteLog(data["MSG"]);
     lsite.session = -1;
     rsite.session = -1;
@@ -427,6 +428,7 @@ function handle_QS(data)
         if (qid == queue.qid)
             WriteLog("Thinking about " +data["SRCPATH"]);
         WriteQMLog("QID["+qid+"] Thinking about " +data["SRCPATH"]);
+        expandstart = 0;
     }
     if ("XFRACT" in data) {
         if (qid == queue.qid)
@@ -513,7 +515,11 @@ function handle_QC(data)
         queue.listing.splice(data["@"],0,data);
         if(!debug) {WriteLog("Inserted new queue item "+data["SRCPATH"]+" to "+data["DSTPATH"]);}
         if ("EXPANDING" in data) {
-            return;
+            if (expandstart == 0) {
+                expandstart = 1;
+            } else {
+                return;
+            }
         }
     }
     refreshTable("queue");

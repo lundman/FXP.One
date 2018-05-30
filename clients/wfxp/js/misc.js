@@ -25,6 +25,14 @@ function BadMsg(msg){
 function WriteLog(message) {
   //message += "\n";
   //output.value+=message;
+  // limit output scrollback to 500 lines
+  if (document.getElementById("output")) {
+      var splitlog = output.innerHTML.split("<br>");
+      if (splitlog.length > 500) {
+          splitlog.splice(0,1);
+          output.innerHTML = splitlog.join('<br />');
+      }
+  }
   message += "</br>";
   output.innerHTML+=message;
   output.scrollTop = output.scrollHeight;
@@ -282,10 +290,8 @@ function refreshTable(side){
                 size = "256000";
             }
             if (date == 'undefined') {
-                // Amiga 1000
                 date = "Jul 23 1985";
             }
-            // debug WriteLog("src: " + src + " dst: " + dst + " fid: " + fid + " qside: " + qside + " sid: " + sid + " sitedata: " + sitedata + " size: " + size + " date: " + date );
             addTableRow('queue',"",
                         ["<input type='checkbox' name='QITEM#"+mydat["@"]+"' value='QITEM#"+mydat["@"]+"'/>"+src,src],
                         [size,""], // size

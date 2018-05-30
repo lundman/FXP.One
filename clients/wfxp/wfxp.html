@@ -39,6 +39,7 @@
    var selectedlsiteid = "";
    var selectedrsiteid = "";
    var queuesidesid = "";
+   var expandstart = 0;
 
    function init() {
      output = document.getElementById("output");
@@ -141,8 +142,6 @@
 <select valign="middle" id="leftcmd" class="topcmd" name="leftcmd" onChange="doCmdChange('left');">
     <option value="refresh">refresh</option>
     <option value="filter">filter</option>
-    <option value="selectall">select all</option>
-    <option value="clearall">clear all</option>
     <option value="site" selected>site cmd</option>
     <option value="mkdir">new dir</option>
     <option value="unlink">delete</option>
@@ -181,9 +180,7 @@
 <select valign="middle" id="rightcmd" class="topcmd" name="rightcmd" onChange="doCmdChange('right');">
     <option value="refresh">refresh</option>
     <option value="filter">filter</option>
-    <option value="selectall">select all</option>
-    <option value="clearall">clear all</option>
-   <option value="site" selected>site cmd</option>
+    <option value="site" selected>site cmd</option>
     <option value="mkdir">new dir</option>
     <option value="unlink">delete</option>
     <option value="rename">rename</option>
