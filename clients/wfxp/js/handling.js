@@ -335,6 +335,7 @@ function handle_DIRLIST(data){
     var sitedata = (sid==lsite.session)?lsite:rsite;
     if("BEGIN" in data){
         sitedata.listing = [];
+        sitedata.fidlisting = {};
         clearTable(side);
         dirlistStatus(side,"**PROCESSING**");
     }else if("END" in data){
@@ -344,6 +345,12 @@ function handle_DIRLIST(data){
         if (sitedata.filter != null)
             if (!data["NAME"].match(sitedata.filter)) return;
         sitedata.listing.push(data);
+        //WriteLog("sitedata listing for " + side + " pushed.");
+        // used in refreshTable for access via fid
+        for (var i = 0; i < sitedata.listing.length; i++) {
+            sitedata.fidlisting[sitedata.listing[i]["FID"]] = sitedata.listing[i];
+        }
+        //WriteLog("sitedata fidlisting for " + side + " pushed.");
     }
 }
 
@@ -353,9 +360,11 @@ function handle_QUEUENEW(data)
     queuenewlock = 0;
     if ((data["NORTH_SID"]==lsite.session) &&
         (data["SOUTH_SID"]==rsite.session)) {
+        queuesidesid = {"NORTH":lsite.session, "SOUTH":rsite.session};
         queue.qid = data["QID"];
     } else if ((data["NORTH_SID"]==rsite.session) &&
-               (data["SOUTH_SID"]==lsite.session)) {
+        (data["SOUTH_SID"]==lsite.session)) {
+        queuesidesid = {"NORTH":rsite.session, "SOUTH":lsite.session};
         queue.qid = data["QID"];
     } else {
         return;// not our queue
@@ -386,8 +395,25 @@ function handle_QADD(data)
     //var src = decode(data["SRCPATH"]);
     //var dst = decode(data["DSTPATH"]);
     // Use data["FID"] here to go get the "size" and "date" values.
+
+    var qside = data["SRC"];
+    var fid = data["FID"];
+    var sid = queuesidesid[qside];
+    var sitedata = (sid==lsite.session)?lsite:rsite;
+    var size = "256000";
+    var date = "Jul 23 1985";
+    if (sitedata.fidlisting[fid]["SIZE"]) {
+        size = sitedata.fidlisting[fid]["SIZE"];
+    }
+    if (sitedata.fidlisting[fid]["DATE"]) {
+        date = time2str(sitedata.fidlisting[fid]["DATE"]); 
+    }
+    data["SIZE"] = size;
+    data["DATE"] = date;
+
     queue.listing.push(data);
     refreshTable("queue");
+
     //addTableRow('queue',"",
     //            ["<input type='checkbox' name='QITEM#"+data["@"]+"' value='QITEM#"+data["@"]+"'/>"+src,src],
     //            [0,""], // size
@@ -400,6 +426,7 @@ function handle_GO(data)
 {
     if (data["QID"] != queue.qid) return;
     if (data["CODE"] != 0) return;
+    clearLog("output");
     WriteLog(data["MSG"]);
     lsite.session = -1;
     rsite.session = -1;
@@ -420,6 +447,7 @@ function handle_QS(data)
         if (qid == queue.qid)
             WriteLog("Thinking about " +data["SRCPATH"]);
         WriteQMLog("QID["+qid+"] Thinking about " +data["SRCPATH"]);
+        expandstart = 0;
     }
     if ("XFRACT" in data) {
         if (qid == queue.qid)
@@ -434,6 +462,9 @@ function handle_QS(data)
             speedstats.innerHTML = data["KB/S"]+"KB/s";
         }
         WriteQMLog("QID["+qid+"] Transfer completed after "+data["TIME"]+"s at "+data["KB/S"]+"KB/s");
+    }
+    if ("REFRESH" in data) {
+        refreshTable("queue");
     }
 }
 
@@ -500,8 +531,17 @@ function handle_QC(data)
         if(!debug) {WriteLog("Moving queue item "+data["FROM"]+" to "+data["TO"]);}
     }
     if ("INSERT" in data) {
+        var date = time2str(data["DATE"]);
+        data["DATE"] = date;
         queue.listing.splice(data["@"],0,data);
         if(!debug) {WriteLog("Inserted new queue item "+data["SRCPATH"]+" to "+data["DSTPATH"]);}
+        if ("EXPANDING" in data) {
+            if (expandstart == 0) {
+                expandstart = 1;
+            } else {
+                return;
+            }
+        }
     }
     refreshTable("queue");
 }
