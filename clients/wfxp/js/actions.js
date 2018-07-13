@@ -483,9 +483,7 @@ function smSaveSite()
         save += "|DSKIPEMPTY="+val;
     if ((val = encodedsitecommands) !==
         (("SVDCMDS" in site) ? site["SVDCMDS"] : plain["SVDCMDS"]))
-        if (typeof val !== 'undefined') {
-           save += "|SVDCMDS="+val;
-        }
+        save += "|SVDCMDS="+val;
     if ((val = document.getElementById("sm_extra").value) !==
         getExtraPairs(site))
         save += "|"+val;
