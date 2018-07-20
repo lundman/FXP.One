@@ -383,7 +383,8 @@ int session_handler(lion_t *handle, void *user_data,
 			if (session && session->cmdq &&
 				session->cmdq->flags & SESSION_CMDQ_FLAG_LOG) {
 
-				line = misc_url_encode(line); // Needs to be FREEd
+				if (session->state != SESSION_ST_STAT_REPLY)
+					line = misc_url_encode(line); // Needs to be FREEd
 
 				if (session->cmdq->flags & SESSION_CMDQ_FLAG_INTERNAL) {
 
@@ -414,7 +415,8 @@ int session_handler(lion_t *handle, void *user_data,
 									 -1,
 									 line);
 
-				SAFE_FREE(line);
+				if (session->state != SESSION_ST_STAT_REPLY)
+					SAFE_FREE(line);
 				break;
 
 			} // FLAG_LOG
@@ -794,6 +796,21 @@ void session_dirlist(session_t *session, char *args, int flags, int id)
 	// This here is a saved id, used only in dirlisting, so we know
 	// where to send the actual dirlist event, including failures.
 	session->files_reply_id = id;
+
+	// do we dirlist with 'list' or 'stat -al' command?
+	if ((site->use_stat != YNA_NO)) {
+		debugf("[session] USING STAT'\n");
+		session_cmdq_newf(session,
+			SESSION_CMDQ_FLAG_INTERNAL | flags | SESSION_CMDQ_FLAG_LOG,
+			SESSION_ST_STAT_REPLY,
+			"stat -al\r\n",
+			args ? args : DEFAULT_LISTARGS);
+
+		// no further action needed now so return
+		return;
+	} else {
+		debugf("[session] USING LIST'\n");
+	}
 
 	// Handle ASCII vs BINARY
 	// If AUTO, we want ASCII
@@ -1383,6 +1400,25 @@ void session_state_process(session_t *session, int reply, char *line)
 			break;
 		}
 		session_setclose(session, line);
+		break;
+
+	case SESSION_ST_STAT_REPLY:
+		if (reply == 213) {
+			debugf("[session] [213]%s\n", line);
+			session->forcebusy = 0;
+			if (session->handler)
+				session->handler(session,
+				SESSION_EVENT_CMD,
+				session->files_reply_id,
+				session->files_used,
+				(char *) session->files);
+			session->files_reply_id = 0;
+			session_set_state(session, SESSION_ST_IDLE, 1);
+			break;
+		} else {
+			session->forcebusy = 1; // we are not idle until we see a 213 reply
+			session_parse(session, line);
+		}
 		break;
 
 	case SESSION_ST_DATA_TRANSFER:

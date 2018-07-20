@@ -292,6 +292,7 @@ sites_t *sites_newnode(void)
 	result->resume       = YNA_AUTO;
 	result->resume_last  = YNA_AUTO;
 	result->pret         = YNA_AUTO;
+	result->use_stat     = YNA_AUTO;
 	result->file_skipempty      = YNA_AUTO;
 	result->directory_skipempty = YNA_AUTO;
 	result->port         = 21;
@@ -421,6 +422,11 @@ int sites_parsekeys(char **keys, char **values, int items, sites_t *node)
 		} else if (tester("pret")) {
 			if (!values[i]) continue;
 			node->pret = str2yna(values[i]);
+			keys[i] = NULL;
+			xitems--;
+		} else if (tester("use_stat")) {
+			if (!values[i]) continue;
+			node->use_stat = str2yna(values[i]);
 			keys[i] = NULL;
 			xitems--;
 		} else if (tester("fskiplist")) {
@@ -731,13 +737,14 @@ void sites_listentry(lion_t *handle, sites_t *runner, int id)
 	if (id == SITES_LIST_SAVE)
 		lion_printf(handle,
 					"SITE|NAME=%s|HOST=%s|PORT=%u|USER=%s|PASS=%s|"
-					"PASSIVE=%u|FXP_PASSIVE=%u|CONTROL_TLS=%u|"
+					"USE_STAT=%u|PASSIVE=%u|FXP_PASSIVE=%u|CONTROL_TLS=%u|"
 					"DATA_TLS=%u",
 					runner->name,
 					runner->host ? runner->host : "",
 					runner->port,
 					runner->user ? runner->user : "",
 					runner->pass ? runner->pass : "",
+					runner->use_stat,
 					runner->passive,
 					runner->fxp_passive,
 					runner->control_TLS,
@@ -745,7 +752,7 @@ void sites_listentry(lion_t *handle, sites_t *runner, int id)
 	else
 		lion_printf(handle,
 					"SITELIST|SITEID=%u|NAME=%s|HOST=%s|PORT=%u|USER=%s|PASS=%s|"
-					"PASSIVE=%u|FXP_PASSIVE=%u|CONTROL_TLS=%u|"
+					"USE_STAT=%u|PASSIVE=%u|FXP_PASSIVE=%u|CONTROL_TLS=%u|"
 					"DATA_TLS=%u",
 					runner->id,
 					runner->name,
@@ -753,6 +760,7 @@ void sites_listentry(lion_t *handle, sites_t *runner, int id)
 					runner->port,
 					runner->user ? runner->user : "",
 					runner->pass ? runner->pass : "",
+					runner->use_stat,
 					runner->passive,
 					runner->fxp_passive,
 					runner->control_TLS,
