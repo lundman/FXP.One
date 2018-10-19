@@ -25,6 +25,14 @@ function BadMsg(msg){
 function WriteLog(message) {
   //message += "\n";
   //output.value+=message;
+  // limit output scrollback to 500 lines
+  if (document.getElementById("output")) {
+      var splitlog = output.innerHTML.split("<br>");
+      if (splitlog.length > 500) {
+          splitlog.splice(0,1);
+          output.innerHTML = splitlog.join('<br />');
+      }
+  }
   message += "</br>";
   output.innerHTML+=message;
   output.scrollTop = output.scrollHeight;
@@ -258,10 +266,21 @@ function refreshTable(side){
             var mydat = queue.listing[i];
             var src = decode(mydat["SRCPATH"]);
             var dst = decode(mydat["DSTPATH"]);
+            if (mydat["FID"]) {
+                var fid = decode(mydat["FID"]);
+            }
+            if (mydat["SIZE"]) {
+                var size = decode(mydat["SIZE"]);
+            } else {
+                if (mydat["SRCSIZE"]) {
+                    var size = decode(mydat["SRCSIZE"]);
+                }
+            }
+            var date = decode(mydat["DATE"]);
             addTableRow('queue',"",
                         ["<input type='checkbox' name='QITEM#"+mydat["@"]+"' value='QITEM#"+mydat["@"]+"'/>"+src,src],
-                        [mydat["SRCSIZE"],""], // size
-                        [0,""], // date
+                        [size,""], // size
+                        [date,""], // date
                         [dst,dst]);
         }
     } else if(side == "qmqueue"){

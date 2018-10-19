@@ -409,6 +409,9 @@ function smSaveSite()
         document.getElementById("sm_pass").value = "NA";
     }
 
+    // current site commands
+    encodedsitecommands = b64wrap(sitesavedcommands,"encode");
+
     if ((val = document.getElementById("sm_name").value) !==
         (("NAME" in site) ? site["NAME"] : plain["NAME"]))
         save += "|NAME="+val;
@@ -480,10 +483,9 @@ function smSaveSite()
         save += "|DSKIPEMPTY="+val;
     if ((val = encodedsitecommands) !==
         (("SVDCMDS" in site) ? site["SVDCMDS"] : plain["SVDCMDS"]))
-        save += "|SVDCMDS="+val;
-    if ((val = encodedrecentdirs) !==
-        (("RDIRS" in site) ? site["RDIRS"] : plain["RDIRS"]))
-        save += "|RDIRS="+val;
+        if (typeof val !== 'undefined') {
+           save += "|SVDCMDS="+val;
+        }
     if ((val = document.getElementById("sm_extra").value) !==
         getExtraPairs(site))
         save += "|"+val;
