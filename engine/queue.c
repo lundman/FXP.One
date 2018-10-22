@@ -2673,13 +2673,14 @@ static void queue_process(queue_t *queue)
 							"QC|QID=%u|EMPTY|ERRORS=%u\r\n",
 							queue->id, queue->num_errors);
 
+
 		debugf("Sending 'QUIT' to any connected FTP servers\n");
-		if (queue->north_mgr)
+		if (queue->north_mgr && queue->north_mgr->session)
 			session_cmdq_new(queue->north_mgr->session,
 				0,
 				QUEUE_EVENT_PHASE_12_NOOP,
 				"QUIT\r\n");
-		if (queue->south_mgr)
+		if (queue->south_mgr && queue->south_mgr->session)
 			session_cmdq_new(queue->south_mgr->session,
 				0,
 				QUEUE_EVENT_PHASE_12_NOOP,
