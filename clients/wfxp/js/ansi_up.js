@@ -330,7 +330,6 @@ var AnsiUp = (function () {
     };
     return AnsiUp;
 }());
-//# sourceMappingURL=ansi_up.js.map
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.default = AnsiUp;
 }));
