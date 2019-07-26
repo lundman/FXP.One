@@ -1197,7 +1197,7 @@ function svCmdReadWrite(rwcommand,type,siteid)
 
     if (rwcommand == "read") {
         encodeddata = site[type];
-        if(!encodeddata || encodeddata == '') {
+        if(!encodeddata || encodeddata == '' || encodeddata == 'undefined') {
             // WriteLog("Cannot read " + type + " from " + sitelist[siteid]["NAME"]); 
             return -1;
         }
@@ -1230,7 +1230,9 @@ function svCmdReadWrite(rwcommand,type,siteid)
         if (type == "RDIRS") {
             tmpsavedcmds = eval(side+"siderecentdirs").toString();
             var tmpencodedrecentdirs = b64wrap(tmpsavedcmds,"encode");
-            save = "SITEMOD|SITEID=" + siteid + "|RDIRS=" + tmpencodedrecentdirs;
+            if(tmpencodedrecentdirs) {
+               save = "SITEMOD|SITEID=" + siteid + "|RDIRS=" + tmpencodedrecentdirs;
+            } else { save = "SITEMOD|SITEID=" + siteid; }
             // WriteLog("Saved rdir site data: " + tmpsavedcmds);
             socket.send(save+"\n");
         }
