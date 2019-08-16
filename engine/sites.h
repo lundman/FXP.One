@@ -61,6 +61,7 @@ typedef struct sites_struct {
 	yesnoauto_t pret;        // NO=don't PRET, YES=send PRET, AUTO=if site has
 	                         // feature PRET set we send.
 
+	yesnoauto_t use_stat;	// yes/auto -> uses 'stat -al' for dirlisting instead of 'list'
 
 	char *file_skiplist;     // slash seperated skip list
 	char *directory_skiplist;
