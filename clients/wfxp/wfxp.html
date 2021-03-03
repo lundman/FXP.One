@@ -19,9 +19,9 @@
    var currview="";
    var sitelist={};
    var qlist={};
-   var lsite={siteid:-1,session:-1,filter:null,listing:[]};
-   var rsite={siteid:-1,session:-1,filter:null,listing:[]};
-   var queue={qid:-1,listing:[]};
+   var lsite={siteid:'-1',session:'-1',filter:null,listing:[]};
+   var rsite={siteid:'-1',session:'-1',filter:null,listing:[]};
+   var queue={qid:'-1',listing:[]};
    var queuemanager={listing:[]};
    var connected = false;
    var debug = false;
@@ -40,6 +40,7 @@
    var selectedrsiteid = "";
    var queuesidesid = "";
    var expandstart = 0;
+   var site;
 
    function init() {
      output = document.getElementById("output");
@@ -128,8 +129,8 @@
   </div>
 <div class="content" id="primary">
 <div class="table_wrapper" id="lpane">
-<input type="image" class="ctrls" src="img/site-connect.png" alt="Connect Site" title="Connect Site" onclick="do_SESSIONNEW('left');">
-<input type="image" class="ctrls" style="vertical-align: text-bottom;" src="img/site-disconnect.png" alt="Disconnect Site" title="Disconnect Site" onclick="do_SESSIONFREE('left');">
+<input type="image" class="ctrls" src="img/site-connect.png" alt="Connect Site" title="Connect Site" onclick="doSESSIONNEW('left');">
+<input type="image" class="ctrls" style="vertical-align: text-bottom;" src="img/site-disconnect.png" alt="Disconnect Site" title="Disconnect Site" onclick="doSESSIONFREE('left');">
 <select valign="middle" id="lslist" name="lslist"></select>
 <input type="image" class="ctrls" src="img/enqueue.png" alt="Enqueue Item" title="Enqueue Item" onclick="doQueue('left');">
 <span>
@@ -166,8 +167,8 @@
     </div>
 </div>
 <div class="table_wrapper" id="rpane">
-<input type="image" class="ctrls" src="img/site-connect.png" alt="Connect Site" title="Connect Site" onclick="do_SESSIONNEW('right');">
-<input type="image" class="ctrls" style="vertical-align: text-bottom;" src="img/site-disconnect.png" alt="Disconnect Site" title="Disconnect Site" onclick="do_SESSIONFREE('right');">
+<input type="image" class="ctrls" src="img/site-connect.png" alt="Connect Site" title="Connect Site" onclick="doSESSIONNEW('right');">
+<input type="image" class="ctrls" style="vertical-align: text-bottom;" src="img/site-disconnect.png" alt="Disconnect Site" title="Disconnect Site" onclick="doSESSIONFREE('right');">
 <select valign="middle" id="rslist" name="rslist"></select>
 <input type="image" class="ctrls" src="img/enqueue.png" alt="Enqueue Item" title="Enqueue Item" onclick="doQueue('right');">
 <span>
@@ -207,18 +208,18 @@
 <div class="qwrapper">
 <div class="table_wrapper" id="qpane">
 <input type="image" class="ctrls" src="img/go1.png" title="Start
-    Processing Queue" onclick="do_GO();">
+    Processing Queue" onclick="doGO();">
 <input type="image" class="ctrls" src="img/stop2.png" title="Stop
-   Queue Processing" onclick="do_STOP();">
-<input type="image" class="ctrls" src="img/move-top.png" title="Move to top" onclick="do_QITOP();">
-<input type="image" class="ctrls" src="img/move-up.png" title="Move up one" onclick="do_QIUP();">
-<input type="image" class="ctrls" src="img/move-down.png" title="Move down one" onclick="do_QIDOWN();">
-<input type="image" class="ctrls" src="img/move-bottom.png" title="Move to bottom" onclick="do_QIBOTTOM();">
-<input type="image" class="ctrls" src="img/delete_item.png" title="Delete item" onclick="do_QIDELETE();">
-<input type="image" class="ctrls" src="img/nuke.gif" title="Clear all items" onclick="do_QICLEAR();">
-<input type="image" class="ctrls" src="img/select_all.png" title="Select all" onclick="do_QISELECT();">
-<input type="image" class="ctrls" src="img/select_none.png" title="Deselect all" onclick="do_QIDESELECT();">
-<input type="image" class="ctrls" src="img/insert-stop.png" title="Insert STOP item" onclick="do_QIINSERT();">
+   Queue Processing" onclick="doSTOP();">
+<input type="image" class="ctrls" src="img/move-top.png" title="Move to top" onclick="doQITOP();">
+<input type="image" class="ctrls" src="img/move-up.png" title="Move up one" onclick="doQIUP();">
+<input type="image" class="ctrls" src="img/move-down.png" title="Move down one" onclick="doQIDOWN();">
+<input type="image" class="ctrls" src="img/move-bottom.png" title="Move to bottom" onclick="doQIBOTTOM();">
+<input type="image" class="ctrls" src="img/delete_item.png" title="Delete item" onclick="doQIDELETE();">
+<input type="image" class="ctrls" src="img/nuke.gif" title="Clear all items" onclick="doQICLEAR();">
+<input type="image" class="ctrls" src="img/select_all.png" title="Select all" onclick="doQISELECT();">
+<input type="image" class="ctrls" src="img/select_none.png" title="Deselect all" onclick="doQIDESELECT();">
+<input type="image" class="ctrls" src="img/insert-stop.png" title="Insert STOP item" onclick="doQIINSERT();">
 <span id="speedstats" title="Last completed transfer">-.-KB/s</span>
 <div class="qheader" id="queuehead">
         <div class="qhead1"><a href="#" onclick="changeSort('queue','SRC');">Source</a></div>
@@ -252,12 +253,12 @@
     <div class="row">
         <div class="col">
             <div class="wallheader" id="lloglabel">
-            <input type="image" align="right" class="ctrls" src="img/delete_item.png" title="Clear log" onclick="do_LogClear('left');">
+            <input type="image" align="right" class="ctrls" src="img/delete_item.png" title="Clear log" onclick="doLogClear('left');">
             </div>
         </div>
         <div class="col">
             <div class="wallheader" id="rloglabel">
-            <input type="image" align="right" class="ctrls" src="img/delete_item.png" title="Clear log" onclick="do_LogClear('right');">
+            <input type="image" align="right" class="ctrls" src="img/delete_item.png" title="Clear log" onclick="doLogClear('right');">
             </div>
         </div>
     </div>
@@ -401,13 +402,13 @@ Saved commands</br>
 <h1>Queue Manager</h1>
 <div class="qmwrapper">
 <div class="table_wrapper" id="qmpane">
-<input type="image" class="ctrls" src="img/refresh.png" title="Refresh Queue List" onclick="do_QMRefresh();">
-<input type="image" class="ctrls" src="img/idle.png" title="Clear idle queues" onclick="do_QMClearIdle();">
-<input type="image" class="ctrls" src="img/clone.png" title="Clone queue (add another thread)" onclick="do_QMClone();">
-<input type="image" class="ctrls" src="img/subscribe.png" title="Un/Subscribe to queue (receive transfer messages)" onclick="do_QMSubscribe();">
-<input type="image" class="ctrls" src="img/view.png" title="View queue errors, if any" onclick="do_QMView();">
-<input type="image" class="ctrls" src="img/grab.png" title="Grab queue (To modify queue)" onclick="do_QMGrab();">
-<input type="image" class="ctrls" src="img/nuke.gif" title="Nuke queue" onclick="do_QMNuke();">
+<input type="image" class="ctrls" src="img/refresh.png" title="Refresh Queue List" onclick="doQMRefresh();">
+<input type="image" class="ctrls" src="img/idle.png" title="Clear idle queues" onclick="doQMClearIdle();">
+<input type="image" class="ctrls" src="img/clone.png" title="Clone queue (add another thread)" onclick="doQMClone();">
+<input type="image" class="ctrls" src="img/subscribe.png" title="Un/Subscribe to queue (receive transfer messages)" onclick="doQMSubscribe();">
+<input type="image" class="ctrls" src="img/view.png" title="View queue errors, if any" onclick="doQMView();">
+<input type="image" class="ctrls" src="img/grab.png" title="Grab queue (To modify queue)" onclick="doQMGrab();">
+<input type="image" class="ctrls" src="img/nuke.gif" title="Nuke queue" onclick="doQMNuke();">
   <div class="qmheader" id="qmqueuehead">
         <div class="qmhead1"><a href="#" onclick="changeSort('queue','SRC');">S</a></div>
         <div class="qmhead2"><a href="#" onclick="changeSort('queue','SIZE');">Src Site</a></div>

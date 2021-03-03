@@ -5,8 +5,6 @@ body {
 	margin-top: 10px;
 }
 .connbox{
-        float: left;
-        align: left;
         vertical-align: center;
         border-style: dotted;
         border-width: 1px;
@@ -16,7 +14,6 @@ body {
 }
 .pwdchbox{
         float: left;
-        align: left;
         vertical-align: center;
         border-style: dotted;
         border-width: 1px;
@@ -174,9 +171,6 @@ body {
 	#tab a:hover {
 		background: #fc0;
 		color: #540;
-	}0123456789a
-
-	#tab .selected {
 	}
 
 	#tab .selected a {
@@ -196,5 +190,3 @@ body {
 		padding: 1em;
 		background: white;
 	}
-
--->
