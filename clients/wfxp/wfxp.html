@@ -94,12 +94,16 @@
    window.onresize = cleanUI
   </script>
 <link rel="StyleSheet" href="css/main.css" title="main" type="text/css"/>
+<script>
+   // Apply saved colour theme before first paint (see cycleTheme()).
+   try { if (localStorage.theme) document.documentElement.setAttribute("data-theme", localStorage.theme); } catch (e) {}
+</script>
 </head>
 <body>
   <div class="connbutt">
   <input class="ctrls" type="image" alt="Connect" title="Connect"
      src="img/disconnected.png" onclick="doDisConn();" value="Connect" id="connect">
-   <span id="connectstatus"><font color="#000">Enter credentials and click lock to connect.</font></span>
+   <span id="connectstatus"><span style="color: var(--fg);">Enter credentials and click lock to connect.</span></span>
    </div>
   <div class="connbox" id="cblock">
   User:<input type="text" name="user" id="user" value="">&nbsp;<input
@@ -124,6 +128,7 @@
   <li id="smtab" class=""><a href="#" value="click" onclick="toggleView('sitemanager')">Sites</a></li>
   <li id="qmtab" class=""><a href="#" value="click" onclick="toggleView('queuemanager')">Queues</a></li>
   <li id="lvtab" class=""><a href="#" value="click" onclick="toggleView('logviewer')">Site Log</a></li>
+  <li style="float:right"><a href="#" id="themetoggle" title="Colour theme: Auto follows the OS setting" onclick="cycleTheme(); return false;">Theme: Auto</a></li>
   </ul>
   </div>
 <div class="content" id="primary">

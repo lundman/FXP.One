@@ -504,3 +504,27 @@ function handleCheckboxRangeClick(event) {
 }
 
 document.addEventListener("click", handleCheckboxRangeClick, false);
+
+// Colour theme: Auto (follow OS) -> Light -> Dark. Stored in localStorage
+// and applied as <html data-theme="...">; colours live in css/main.css.
+var themeNames = { "": "Auto", "light": "Light", "dark": "Dark" };
+
+function updateThemeLabel() {
+    var cur = document.documentElement.getAttribute("data-theme") || "";
+    var link = document.getElementById("themetoggle");
+    if (link)
+        link.innerHTML = "Theme: " + themeNames[cur];
+}
+
+function cycleTheme() {
+    var cur = document.documentElement.getAttribute("data-theme") || "";
+    var next = (cur == "") ? "light" : (cur == "light") ? "dark" : "";
+    if (next)
+        document.documentElement.setAttribute("data-theme", next);
+    else
+        document.documentElement.removeAttribute("data-theme");
+    try { localStorage.theme = next; } catch (e) {}
+    updateThemeLabel();
+}
+
+window.addEventListener("load", updateThemeLabel, false);
