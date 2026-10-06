@@ -46,8 +46,6 @@ AC_CHECK_FILE([lion/src/lion.h], ,
 AC_PROG_CC
 AC_PROG_RANLIB
 
-AC_TYPE_SIGNAL
-
 if test "x$ac_cv_prog_gcc" = xyes ; then
    CFLAGS="$CFLAGS -Wall -g"
 fi
@@ -80,7 +78,7 @@ AC_CACHE_CHECK([for curses library], ac_cv_curses_dir, [
 
   for curseslib in ncurses  ; do
 
-  for dir in $trycursesdir "" $prefix /usr/local /opt /usr/pkg /usr ; do
+  for dir in $trycursesdir "" $prefix /usr/local /opt/homebrew/opt/ncurses /opt/homebrew /opt/local /opt /usr/pkg /usr ; do
     LDFLAGS="$saved_LDFLAGS"
 
     # Skip the directory if it isn't there.
@@ -111,7 +109,8 @@ AC_CACHE_CHECK([for curses library], ac_cv_curses_dir, [
     LIBS="$saved_LIBS -l$curseslib"
 
     # Can I link it?
-    AC_TRY_LINK([#include <$curseslib.h>],
+    AC_TRY_LINK([#include <$curseslib.h>
+#include <term.h>],
        [ setupterm((void*)0, 0, (void *)0); ],
        [ curses_linked=yes ], [ curses_linked=no ])
     if test $curses_linked = yes; then
@@ -174,7 +173,7 @@ AC_CACHE_CHECK([for CDK library], ac_cv_cdk_dir, [
   saved_CPPFLAGS="$CPPFLAGS"
   cdk_found=no
 
-  for dir in $trycdkdir "" $prefix /usr/local/ /opt/ /usr/pkg/ /usr/ ; do
+  for dir in $trycdkdir "" $prefix /usr/local/ /opt/homebrew/ /opt/local/ /opt/ /usr/pkg/ /usr/ ; do
     LDFLAGS="$saved_LDFLAGS"
     LIBS="$saved_LIBS -l$curseslib -lcdk"
 
@@ -260,7 +259,7 @@ AC_CACHE_CHECK([for OpenSSL directory], ac_cv_openssl_dir, [
   saved_LDFLAGS="$LDFLAGS"
   saved_CPPFLAGS="$CPPFLAGS"
   ssl_found=no
-  for ssldir in $tryssldir "" $prefix /usr/local/openssl /usr/lib/openssl /usr/local/ssl /usr/lib/ssl /usr/local /usr/athena /usr/pkg /opt /opt/openssl ; do
+  for ssldir in $tryssldir "" $prefix /opt/homebrew/opt/openssl@3 /opt/homebrew/opt/openssl /usr/local/opt/openssl@3 /usr/local/opt/openssl /opt/local /usr/local/openssl /usr/lib/openssl /usr/local/ssl /usr/lib/ssl /usr/local /usr/athena /usr/pkg /opt /opt/openssl ; do
     LDFLAGS="$saved_LDFLAGS"
     LIBS="$saved_LIBS -lssl -lcrypto"
 
@@ -307,6 +306,8 @@ if test $ssl_found = yes ; then
   AC_DEFINE([WITH_SSL], 1, [Define if we found OpenSSL - Legacy name])
   LIBS="$LIBS -lssl -lcrypto"
   if test "$ac_cv_openssl_dir" != "(system)"; then
+    # Make lion's configure use the same OpenSSL we found
+    ac_configure_args="$ac_configure_args '--with-ssl-dir=$ac_cv_openssl_dir'"
     if test -d "$ac_cv_openssl_dir/lib" ; then
       LDFLAGS="-L$ac_cv_openssl_dir/lib $LDFLAGS"
       ssl_libdir="$ac_cv_openssl_dir/lib"
@@ -322,7 +323,7 @@ if test $ssl_found = yes ; then
   fi
 fi
 
-if test -z $CROSS_COMPILE
+if test -z "$CROSS_COMPILE" -a "$ssl_found" = yes
 then
 AC_CACHE_CHECK([whether we need extra options to link OpenSSL],
                ac_cv_openssl_linker_option, [
@@ -385,41 +386,52 @@ if test "$ac_cv_openssl_linker_option" != '(none)' ; then
 fi
 fi
 
-m4_pattern_forbid([^_?PKG_[A-Z_]+$],[pkg.m4 missing, please install pkg-config])
-PKG_PROG_PKG_CONFIG
-if test -n $PKG_CONFIG; then
-   PKG_CHECK_MODULES([PCRE], [libpcre],
-   AC_DEFINE([HAVE_PCRE], [1], [Could find PCRE library]),
-   AC_MSG_WARN([No PCRE (libpcre - perl regexp library) clomps-irc client will be disabled]))
-else
-   AC_CHECK_PROG(PCRE_CONFIG, pcre-config, pcre-config)
-   AC_ARG_WITH(pcre-config,
+dnl ------------------------------------------------------
+dnl PCRE (optional, used by clomps-irc). Use pkg-config if present,
+dnl otherwise pcre-config. Deliberately avoids pkg.m4 (PKG_CHECK_MODULES)
+dnl so autogen.sh works even when pkg.m4 is not in aclocal's search path.
+AC_ARG_WITH(pcre-config,
    AS_HELP_STRING([--with-pcre-config=PATH],
-                   [Location of PCRE pcre-config (auto)]),
-	               [pcre_config="$withval"],
-	               [pcre_config=""])
+                  [Location of PCRE pcre-config (auto)]),
+   [pcre_config="$withval"],
+   [pcre_config=""])
 
-  if test "x$pcre_config" != "x" ; then
-    AC_MSG_CHECKING(for $pcre_config)
+pcre_found=no
+AC_PATH_TOOL([PKG_CONFIG], [pkg-config])
+if test "x$pcre_config" = "x" -a "x$PKG_CONFIG" != "x"; then
+   AC_MSG_CHECKING([for libpcre with pkg-config])
+   if $PKG_CONFIG --exists libpcre 2>/dev/null; then
+      PCRE_CFLAGS=`$PKG_CONFIG --cflags libpcre`
+      PCRE_LIBS=`$PKG_CONFIG --libs libpcre`
+      pcre_found=yes
+   fi
+   AC_MSG_RESULT([$pcre_found])
+fi
 
-    if test -f $pcre_config ; then
-      PCRE_CONFIG=$pcre_config
-      AC_MSG_RESULT(yes)
-    else
-      AC_MSG_RESULT(no - searching PATH)
-    fi
-  fi
-  if test "x$PCRE_CONFIG" = "x"; then
-    AC_CHECK_PROGS(PCRE_CONFIG, pcre-config)
-  fi
-  PCRE_CFLAGS=`$PCRE_CONFIG --cflags`
-  PCRE_LIBS=`$PCRE_CONFIG --libs`
-  AC_DEFINE([HAVE_PCRE], [1], [Could find PCRE library])
+if test "$pcre_found" = no; then
+   if test "x$pcre_config" != "x" -a "x$pcre_config" != "xyes"; then
+      PCRE_CONFIG="$pcre_config"
+   else
+      AC_PATH_PROG([PCRE_CONFIG], [pcre-config])
+   fi
+   if test "x$PCRE_CONFIG" != "x" && test -x "$PCRE_CONFIG"; then
+      PCRE_CFLAGS=`$PCRE_CONFIG --cflags`
+      PCRE_LIBS=`$PCRE_CONFIG --libs`
+      pcre_found=yes
+   fi
+fi
+
+if test "$pcre_found" = yes; then
+   AC_DEFINE([HAVE_PCRE], [1], [Could find PCRE library])
+else
+   PCRE_CFLAGS=""
+   PCRE_LIBS=""
+   AC_MSG_WARN([No PCRE (libpcre - perl regexp library) clomps-irc client will be disabled])
 fi
 AC_SUBST(PCRE_CFLAGS)
 AC_SUBST(PCRE_LIBS)
 
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile engine/Makefile clients/Makefile clients/FXP.cOne/Makefile clients/clomps/Makefile clients/wfxp/Makefile])
 AC_OUTPUT
 

@@ -12,7 +12,7 @@ clomps_irc_SOURCES= clomps-irc.c irc.c irc.h debug.c parser.c site.c conf.c	\
 clomps_irc_CFLAGS=-I$(top_srcdir)/lion/src -DCLOMPS_IRC=1
 clomps_irc_LDADD=$(top_srcdir)/lion/src/liblion.a @PCRE_LIBS@
 
-INCLUDES=@PCRE_CFLAGS@
+AM_CPPFLAGS=@PCRE_CFLAGS@
 
 # Extra all
 EXTRA_DIST=README.txt getopt.c clomps.conf irc.conf
