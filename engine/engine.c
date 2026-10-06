@@ -68,7 +68,7 @@ int engine_foreground = 0;  // Don't fork.
 int engine_firstrun = 0;
 
 
-RETSIGTYPE exit_interrupt(void)
+void exit_interrupt(int sig)
 {
 
 	engine_running = 0;
@@ -561,18 +561,33 @@ void engine_workdir()
 		if (use_cwd) return;
 
 #ifdef WFXPROOTDIR
-        // Is wfxp installed?
-        tmp = misc_strjoin(build_path, HTTP_DIR);
-        if (stat(tmp, &stsb)) {
+        // Is wfxp installed, and up to date?
+        {
+            char *wfxpsrc = NULL;
+            char *srcfile, *dstfile;
+            struct stat srcsb;
+
             // Are the source files present?
-            if (!stat(WFXPROOTDIR, &stsb)) {
-                http_install_wfxp(WFXPROOTDIR, tmp);
-            } else if (!stat("../clients/wfxp/", &stsb)) {
+            if (!stat(WFXPROOTDIR, &stsb))
+                wfxpsrc = WFXPROOTDIR;
+            else if (!stat("../clients/wfxp/", &stsb))
                 // What is not installed, but running in src engine dir?
-                http_install_wfxp("../clients/wfxp/", tmp);
+                wfxpsrc = "../clients/wfxp/";
+
+            tmp = misc_strjoin(build_path, HTTP_DIR);
+            if (wfxpsrc) {
+                srcfile = misc_strjoin(wfxpsrc, HTTP_DEFAULT_FILE);
+                dstfile = misc_strjoin(tmp, HTTP_DEFAULT_FILE);
+                // Copy if never installed, or source (re)installed since.
+                if (stat(dstfile, &stsb) ||
+                    (!stat(srcfile, &srcsb) &&
+                     srcsb.st_mtime > stsb.st_mtime))
+                    http_install_wfxp(wfxpsrc, tmp);
+                SAFE_FREE(srcfile);
+                SAFE_FREE(dstfile);
             }
+            SAFE_FREE(tmp);
         }
-        SAFE_FREE(tmp);
 #endif
 
 		if (!chdir(build_path)) return;
@@ -611,8 +626,13 @@ void engine_workdir()
     if (stat(tmp, &stsb)) {
         printf("\nFXP.Oned require an SSL certificate to support encrypted engine connections.\n");
         printf("If you do not have a certificate, you can make one running this command:\n\n");
-        printf("openssl req -new -x509 -days 365 -nodes -out \"%s\" -keyout \"%s\"\n\n",
+        printf("openssl req -x509 -newkey rsa:2048 -sha256 -days 825 -nodes "
+               "-subj \"/CN=localhost\" "
+               "-addext \"subjectAltName=DNS:localhost,IP:127.0.0.1\" "
+               "-out \"%s\" -keyout \"%s\"\n\n",
                tmp, tmp);
+        printf("Browsers (wfxp) require the subjectAltName to match the host you connect to,\n");
+        printf("and the certificate to be trusted (e.g. add it to Keychain as 'Always Trust').\n\n");
 
         // We quit the engine, as to be less confusing for new users.
         engine_running = 0;
