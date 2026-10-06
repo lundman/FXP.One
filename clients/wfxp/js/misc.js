@@ -462,3 +462,45 @@ function TextToAnsi(text) {
 }
 
 ///////////////////STUFF BELOW HERE IS NO LONGER USED//////////////////////////
+
+// Shift-click range selection for checkboxes in the file/queue tables.
+// Click one checkbox, then shift-click another: everything in between
+// (in current display order) is set to the state of the shift-clicked box.
+var lastCheckboxClicked = {};
+
+function handleCheckboxRangeClick(event) {
+    var box = event.target;
+    if (!box || box.type != 'checkbox')
+        return;
+    var table = box.closest("table");
+    if (!table || !table.id)
+        return;
+
+    var last = lastCheckboxClicked[table.id];
+    lastCheckboxClicked[table.id] = box;
+
+    // Previous anchor must still be in this table (listing may have refreshed)
+    if (!event.shiftKey || !last || last === box || !table.contains(last))
+        return;
+
+    var checks = table.querySelectorAll("input[type='checkbox']");
+    var from = -1, to = -1;
+    for (var i = 0; i < checks.length; i++) {
+        if (checks[i] === last) from = i;
+        if (checks[i] === box) to = i;
+    }
+    if (from < 0 || to < 0)
+        return;
+    if (from > to) { var t = from; from = to; to = t; }
+
+    for (var i = from; i <= to; i++) {
+        if (!checks[i].disabled)
+            checks[i].checked = box.checked;
+    }
+
+    // Shift-click also extends the browser's text selection; clear it.
+    if (window.getSelection)
+        window.getSelection().removeAllRanges();
+}
+
+document.addEventListener("click", handleCheckboxRangeClick, false);

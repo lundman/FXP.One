@@ -136,6 +136,50 @@ function clearAllCheckboxes(side)
     }
 }
 
+// Select the same names on the other side as are selected on this side.
+// Adds to the other side's existing selection; names that don't exist
+// there are skipped (and logged).
+function mirrorCheckboxes(side)
+{
+    var other = (side=="left")?"right":"left";
+    var srcdata = (side=="left")?lsite:rsite;
+    var dstdata = (side=="left")?rsite:lsite;
+    var checks = document.getElementById(side).getElementsByTagName('input');
+    var srcbyfid = {};
+    var dstbyname = {};
+    var fids = [];
+    var missing = [];
+    var wanted = 0;
+    var i, fid, name;
+
+    for (i = 0; i < srcdata.listing.length; i++)
+        srcbyfid[srcdata.listing[i]["FID"]] = srcdata.listing[i];
+    for (i = 0; i < dstdata.listing.length; i++)
+        dstbyname[dstdata.listing[i]["NAME"]] = dstdata.listing[i]["FID"];
+
+    for (i = 0; i < checks.length; i++) {
+        if (checks[i].type == 'checkbox' && checks[i].checked == true) {
+            fid = checks[i].name.split('#',2)[1];
+            if (fid == -1 || !(fid in srcbyfid)) continue;
+            wanted++;
+            name = srcbyfid[fid]["NAME"];
+            if (name in dstbyname)
+                fids.push(String(dstbyname[name]));
+            else
+                missing.push(decode(name));
+        }
+    }
+
+    if (!wanted) {
+        WriteLog("Nothing selected on the "+side+" side.");
+        return;
+    }
+
+    setCheckboxes(other, fids);
+    WriteLog("Matched "+fids.length+" of "+wanted+" on the "+other+" side" +
+             (missing.length ? " (skipped: "+missing.join(", ")+")" : "."));
+}
+
 function copyList(side)
 {
     var string = "";
